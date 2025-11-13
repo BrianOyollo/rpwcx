@@ -50,7 +50,7 @@ profile_page = st.Page(
 if st.user.is_logged_in:
     user = st.user
     db_user = conn.query(
-        "SELECT email, user_type FROM users WHERE email=:email;",
+        "SELECT email, user_type,active FROM users WHERE email=:email;",
         params={"email": user["email"]},
         ttl=0,
     )
@@ -59,6 +59,11 @@ if st.user.is_logged_in:
     if db_user.empty:
         st.error("Access denied: You are not authorized to use this app.")
         time.sleep(2)
+        logout()
+
+    
+    user_active = db_user.iloc[0]['active']
+    if not user_active:
         logout()
 
     user_type = db_user.iloc[0]["user_type"]
