@@ -1,8 +1,17 @@
 import streamlit as st
-
-conn = st.connection("postgresql", type="sql")
+import time
+import duckdb
 
 # st.title("RPWC")
+
+# create a persistent DuckDB and SQL connections
+if "conn" not in st.session_state:
+    st.session_state["conn"] = st.connection("postgresql", type="sql")
+
+if "duck_conn" not in st.session_state:
+    st.session_state["duck_conn"] = duckdb.connect()
+
+conn = st.session_state["conn"]
 
 
 def login():
@@ -40,14 +49,38 @@ profile_page = st.Page(
 
 if st.user.is_logged_in:
     user = st.user
+    db_user = conn.query(
+        "SELECT email, user_type FROM users WHERE email=:email;",
+        params={"email": user["email"]},
+        ttl=0,
+    )
 
-    pg = st.navigation(
-        {
+    # Check if the user exists in the users table
+    if db_user.empty:
+        st.error("Access denied: You are not authorized to use this app.")
+        time.sleep(2)
+        logout()
+
+    user_type = db_user.iloc[0]["user_type"]
+    if user_type == "admin":
+        pages = {
             "Admin": [dashboard, users, requests],
+            # "Users": [users],
+            "Account": [profile_page, logout_page],
+        }
+    elif user_type == "phlebotomist":
+        pages = {
             "User": [user_tasks],
             "Account": [profile_page, logout_page],
         }
-    )
+    else:
+        pages = {
+            "Account": [profile_page, logout_page],
+        }
 else:
-    pg = st.navigation({"Account": [login_page]})
+    pages = {
+        "Account": [login_page],
+    }
+
+pg = st.navigation(pages)
 pg.run()
