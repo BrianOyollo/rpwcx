@@ -69,8 +69,8 @@ def save_user_updates(new_users, modified_users, deleted_users):
         horizontal_alignment="center",
         vertical_alignment="center",
     ):
-        cancel_btn = st.button("Cancel")
-        save_btn = st.button("Confirm")
+        cancel_btn = st.button("Cancel", type="secondary")
+        save_btn = st.button("Confirm", type="secondary")
 
     if cancel_btn:
         st.rerun()
@@ -157,7 +157,7 @@ buttons_container = st.container(
 )
 
 with buttons_container:
-    save_changes_btn = st.button("Save Changes")
+    save_changes_btn = st.button("Make Changes")
     if save_changes_btn:
         new_users, modified_users, deleted_users = prepare_users_updates(
             users, modified_df

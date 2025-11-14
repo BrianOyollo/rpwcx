@@ -27,3 +27,26 @@ CREATE TABLE requests (
     created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
     assigned_to INTEGER REFERENCES users(id) ON DELETE SET NULL
 );
+
+-- note: split this table if this ever grows
+CREATE TABLE tests (
+    id SERIAL PRIMARY KEY,
+    category_name VARCHAR(100) UNIQUE NOT NULL,
+    category_description TEXT,
+    available_tests TEXT [] NOT NULL,
+	created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+-- CREATE TABLE test_categories (
+--     id SERIAL PRIMARY KEY,
+--     category_name VARCHAR(100) UNIQUE NOT NULL,
+--     description TEXT
+-- );
+
+-- CREATE TABLE tests (
+--     id SERIAL PRIMARY KEY,
+--     test_name VARCHAR(150) UNIQUE NOT NULL,
+--     category_id INT REFERENCES test_categories(id) ON DELETE CASCADE,
+--     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- );

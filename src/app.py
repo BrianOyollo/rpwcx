@@ -11,6 +11,9 @@ if "conn" not in st.session_state:
 if "duck_conn" not in st.session_state:
     st.session_state["duck_conn"] = duckdb.connect()
 
+if "show_delete_category_dialog" not in st.session_state:
+    st.session_state["show_delete_category_dialog"] = True
+
 conn = st.session_state["conn"]
 
 
@@ -37,6 +40,7 @@ users = st.Page("admin_pages/users.py", title="Users", icon=":material/group:")
 requests = st.Page(
     "admin_pages/requests.py", title="Requests", icon=":material/assignment:"
 )
+tests = st.Page("admin_pages/tests.py", title="Tests", icon=":material/lab_panel:")
 
 # general user
 user_tasks = st.Page("user_pages/tasks.py", title="Tasks", icon=":material/assignment:")
@@ -61,15 +65,14 @@ if st.user.is_logged_in:
         time.sleep(2)
         logout()
 
-    
-    user_active = db_user.iloc[0]['active']
+    user_active = db_user.iloc[0]["active"]
     if not user_active:
         logout()
 
     user_type = db_user.iloc[0]["user_type"]
     if user_type == "admin":
         pages = {
-            "Admin": [dashboard, users, requests],
+            "Admin": [dashboard, users, requests, tests],
             # "Users": [users],
             "Account": [profile_page, logout_page],
         }
