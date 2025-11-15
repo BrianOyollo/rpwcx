@@ -26,7 +26,7 @@ def new_test_category():
     with st.form("new_category"):
         category_name = st.text_input("Category")
         category_description = st.text_area("Description")
-        available_tests = st.multiselect("Tests", options=[], accept_new_options=True)
+        available_tests = st.text_area("Tests",height=250, placeholder='Add a list of comma seperated tests')
         with st.container(horizontal=True, horizontal_alignment="center"):
             save_category = st.form_submit_button("Save Category", type="primary")
 
@@ -48,10 +48,11 @@ def new_test_category():
                         {
                             "category_name": category_name,
                             "category_description": category_description,
-                            "available_tests": available_tests,
+                            "available_tests": [test.strip() for test in available_tests.split(',')],
                         },
                     )
                     session.commit()
+                    load_tests_from_db.clear()
                     st.rerun()
                 except exc.IntegrityError:
                     st.error("Category already exists!")
@@ -79,14 +80,17 @@ def update_category(category_id: int):
     with st.form("update_category"):
         category_name = st.text_input("Category", value=current_category_name)
         category_description = st.text_area(
-            "Description", value=current_category_description
+            "Description", value=current_category_description, width=500
         )
-        available_tests = st.multiselect(
-            "Tests",
-            default=current_available_tests,
-            options=current_available_tests,
-            accept_new_options=True,
+        available_tests = st.text_area(
+            "Tests", value=",\n".join(current_available_tests), height=250
         )
+        # available_tests = st.multiselect(
+        #     "Tests",
+        #     default=current_available_tests,
+        #     options=current_available_tests,
+        #     accept_new_options=True,
+        # )
         with st.container(horizontal=True, horizontal_alignment="center"):
             update_category = st.form_submit_button("Update")
 
@@ -112,10 +116,13 @@ def update_category(category_id: int):
                             "id": category_id,
                             "category_name": category_name,
                             "category_description": category_description,
-                            "available_tests": available_tests,
+                            "available_tests": [
+                                test.strip() for test in available_tests.split(",")
+                            ],
                         },
                     )
                     session.commit()
+                    load_tests_from_db.clear()
                     st.rerun()
                 except exc.IntegrityError:
                     session.rollback()
@@ -135,7 +142,7 @@ def delete_category(category_id: int):
     delete_query = text("DELETE FROM tests WHERE id=:id")
 
     st.warning(
-        "Are you sure you want to delete this category? This action can't be undone!"
+        "Are you sure you want to delete this **category and its tests**?\n\n **:red[This action can't be undone!]**"
     )
     show_delete_category_dialog_check = st.checkbox(
         "Don't show me this again", value=False
@@ -144,13 +151,14 @@ def delete_category(category_id: int):
         st.session_state["show_delete_category_dialog"] = False
 
     with st.container(horizontal=True, horizontal_alignment="center"):
-        confirm_delete_category = st.button("Confirm Delete")
+        confirm_delete_category = st.button(":red[Confirm Delete]")
 
     if confirm_delete_category:
         with conn.session as session:
             try:
                 session.execute(delete_query, {"id": category_id})
                 session.commit()
+                load_tests_from_db.clear()
                 st.rerun()
             except Exception:
                 st.error(
@@ -168,10 +176,13 @@ actions_container = st.container(
 )
 
 with actions_container:
-    st.text_input(
-        "Search", placeholder="Search by category or test", label_visibility="hidden"
+    test_search = st.text_input(
+        "Search",
+        placeholder="Search by category or test or code",
+        label_visibility="hidden",
+        icon=":material/search:",
     )
-    add_category = st.button("Add Category")
+    add_category = st.button("Category", icon=":material/add:")
     if add_category:
         new_test_category()
 
@@ -179,12 +190,28 @@ with actions_container:
 # ------------------------ TESTS -------------------------------------------------------------------
 
 
-def fetch_tests():
-    categories = conn.query(
+@st.cache_data(ttl=60 * 10)
+def load_tests_from_db():
+    tests_df = conn.query(
         "SELECT id, category_name, category_description, available_tests FROM tests ORDER BY category_name ASC;",
         ttl=0,
     )
-    return categories.to_dict(orient="records")
+    return tests_df
+
+
+def fetch_tests(filter: str = None):
+    tests_df = load_tests_from_db()
+
+    if filter is None:
+        return tests_df.to_dict(orient="records")
+
+    filtered_tests = tests_df[
+        tests_df["category_name"].str.contains(str(filter), case=False, na=False)
+        | tests_df["available_tests"].apply(
+            lambda tests: any(filter.lower() in test.lower() for test in tests)
+        )
+    ]
+    return filtered_tests.to_dict(orient="records")
 
 
 tests_list_container = st.container(
@@ -197,44 +224,69 @@ tests_list_container = st.container(
 )
 
 
-categories = fetch_tests()
+categories = fetch_tests(test_search)
 
 
 with tests_list_container:
     for category in categories:
-        with st.container(
-            key=f"ctn_{category}",
-            border=True,
-            horizontal=True,
-            horizontal_alignment="distribute",
-            vertical_alignment="center",
-        ):
-            with st.container(border=False, width=800, key=f"{category}_contents"):
-                st.write(f"**:orange[{category['category_name']}]**")
-                st.write(", ".join(category["available_tests"]))
+        with st.expander(f"**:orange[{category['category_name']}]**"):
             with st.container(
+                key=f"ctn_{category}",
                 border=False,
-                horizontal_alignment="center",
                 horizontal=True,
-                key=f"{category}_btns",
+                horizontal_alignment="distribute",
+                vertical_alignment="center",
             ):
-                edit = st.button("Edit", key=f"edit_{category}")
-                if edit:
-                    update_category(category["id"])
+                with st.container(
+                    horizontal=True,
+                    horizontal_alignment="distribute",
+                    vertical_alignment="top",
+                    width=900,
+                ):
+                    st.pills(
+                        category["category_description"],
+                        category["available_tests"],
+                        label_visibility="hidden",
+                    )
 
-                delete = st.button("Delete", key=f"delete_{category}")
-                if delete:
-                    if not st.session_state["show_delete_category_dialog"]:
-                        with conn.session as session:
-                            try:
-                                delete_query = text("DELETE FROM tests WHERE id=:id")
-                                session.execute(delete_query, {"id": category["id"]})
-                                session.commit()
-                                st.rerun()
-                            except Exception:
-                                st.error(
-                                    "Error deleting category. \nPlease contact system admin for support if the issue persists"
-                                )
-                                session.rollback()
-                    else:
-                        delete_category(category["id"])
+                # st.write(", ".join(category["available_tests"]))
+                with st.container(
+                    border=False,
+                    horizontal_alignment="center",
+                    horizontal=True,
+                    key=f"{category}_btns",
+                ):
+                    edit = st.button(
+                        "Edit",
+                        key=f"edit_{category}",
+                        type="secondary",
+                        icon=":material/edit:",
+                    )
+                    if edit:
+                        update_category(category["id"])
+
+                    delete = st.button(
+                        "Delete Category",
+                        key=f"delete_{category}",
+                        type="primary",
+                        icon=":material/delete:",
+                    )
+                    if delete:
+                        if not st.session_state["show_delete_category_dialog"]:
+                            with conn.session as session:
+                                try:
+                                    delete_query = text(
+                                        "DELETE FROM tests WHERE id=:id"
+                                    )
+                                    session.execute(
+                                        delete_query, {"id": category["id"]}
+                                    )
+                                    session.commit()
+                                    st.rerun()
+                                except Exception:
+                                    st.error(
+                                        "Error deleting category. \nPlease contact system admin for support if the issue persists"
+                                    )
+                                    session.rollback()
+                        else:
+                            delete_category(category["id"])
