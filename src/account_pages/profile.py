@@ -7,6 +7,3 @@ else:
     st.write("You don't have permission to view this page!")
 
 conn = st.connection("postgresql", type="sql")
-
-
-

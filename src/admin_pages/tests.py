@@ -192,11 +192,15 @@ with actions_container:
 
 @st.cache_data(ttl=60 * 10)
 def load_tests_from_db():
-    tests_df = conn.query(
-        "SELECT id, category_name, category_description, available_tests FROM tests ORDER BY category_name ASC;",
-        ttl=0,
-    )
-    return tests_df
+    try:
+        tests_df = conn.query(
+            "SELECT id, category_name, category_description, available_tests FROM tests ORDER BY category_name ASC;",
+            ttl=0,
+        )
+        return tests_df
+    except Exception as e:
+        st.error("Error fetching tests from the db. Contact system admin if issue persists")
+        st.stop()
 
 
 def fetch_tests(filter: str = None):

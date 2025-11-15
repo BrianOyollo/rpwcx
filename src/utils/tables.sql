@@ -115,7 +115,7 @@ VALUES
     ARRAY[
         'Cardiac Enzymes [1800]',
         'GDF-15 Cardiac Biomarker [6838]',
-        'High Sensitivity CRP (hs-CRP) [A13407]',
+        'High Sensitivity CRP (hs-CRP) [3407]',
         'Homocysteine Level [4132]',
         'pro-BNP (NT Pro BNP) [1811]',
         'Troponin I [4806]',
