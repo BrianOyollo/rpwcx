@@ -14,6 +14,7 @@ if "duck_conn" not in st.session_state:
 if "show_delete_category_dialog" not in st.session_state:
     st.session_state["show_delete_category_dialog"] = True
 
+
 conn = st.session_state["conn"]
 
 
@@ -38,7 +39,7 @@ dashboard = st.Page(
 )
 users = st.Page("admin_pages/users.py", title="Users", icon=":material/group:")
 requests = st.Page(
-    "admin_pages/requests.py", title="Requests", icon=":material/assignment:"
+    "admin_pages/new_request.py", title="Lab Request Form", icon=":material/assignment:"
 )
 tests = st.Page("admin_pages/tests.py", title="Tests", icon=":material/lab_panel:")
 
@@ -53,11 +54,17 @@ profile_page = st.Page(
 
 if st.user.is_logged_in:
     user = st.user
-    db_user = conn.query(
-        "SELECT email, user_type,active FROM users WHERE email=:email;",
-        params={"email": user["email"]},
-        ttl=0,
-    )
+    try:
+        db_user = conn.query(
+            "SELECT email, user_type,active, is_deleted FROM users WHERE email=:email",
+            params={"email": user["email"]},
+            ttl=0,
+        )
+    except Exception as e:
+        st.error(
+            "Error fetching users from the db. Contact system admin for assistance if the issue persists"
+        )
+        st.stop()
 
     # Check if the user exists in the users table
     if db_user.empty:
@@ -66,7 +73,10 @@ if st.user.is_logged_in:
         logout()
 
     user_active = db_user.iloc[0]["active"]
-    if not user_active:
+    user_deleted = db_user.iloc[0]["is_deleted"]
+    if not user_active or user_deleted:
+        st.error("Your account is deactivated. Contact an admin for assistance.")
+        time.sleep(2)
         logout()
 
     user_type = db_user.iloc[0]["user_type"]

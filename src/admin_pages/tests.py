@@ -16,7 +16,7 @@ header_container = st.container(
 )
 
 with header_container:
-    st.header("Tests", divider="grey")
+    st.header("Tests", divider="orange")
 
 # -------------------- SUBHEADER ---------------------------------------
 
@@ -26,7 +26,9 @@ def new_test_category():
     with st.form("new_category"):
         category_name = st.text_input("Category")
         category_description = st.text_area("Description")
-        available_tests = st.text_area("Tests",height=250, placeholder='Add a list of comma seperated tests')
+        available_tests = st.text_area(
+            "Tests", height=250, placeholder="Add a list of comma seperated tests"
+        )
         with st.container(horizontal=True, horizontal_alignment="center"):
             save_category = st.form_submit_button("Save Category", type="primary")
 
@@ -48,7 +50,9 @@ def new_test_category():
                         {
                             "category_name": category_name,
                             "category_description": category_description,
-                            "available_tests": [test.strip() for test in available_tests.split(',')],
+                            "available_tests": [
+                                test.strip() for test in available_tests.split(",")
+                            ],
                         },
                     )
                     session.commit()
@@ -199,7 +203,9 @@ def load_tests_from_db():
         )
         return tests_df
     except Exception as e:
-        st.error("Error fetching tests from the db. Contact system admin if issue persists")
+        st.error(
+            "Error fetching tests from the db. Contact system admin if issue persists"
+        )
         st.stop()
 
 
