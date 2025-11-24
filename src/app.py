@@ -38,7 +38,9 @@ dashboard = st.Page(
     "admin_pages/dashboard.py", title="Dashboard", icon=":material/dashboard:"
 )
 users = st.Page("admin_pages/users.py", title="Users", icon=":material/group:")
-requests = st.Page("admin_pages/new_request.py", title="Lab Request Form", icon=":material/assignment:")
+requests = st.Page(
+    "admin_pages/new_request.py", title="Lab Request Form", icon=":material/assignment:"
+)
 tests = st.Page("admin_pages/tests.py", title="Tests", icon=":material/lab_panel:")
 
 # general user

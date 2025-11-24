@@ -14,6 +14,7 @@ if "users_upated" not in st.session_state:
 
 st.header("Users", divider="orange")
 
+
 @st.cache_data(ttl=60 * 2)
 def fetch_all_users():
     try:

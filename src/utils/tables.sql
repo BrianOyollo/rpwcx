@@ -40,24 +40,19 @@ CREATE TABLE requests (
     email VARCHAR(150),
     location VARCHAR(150),
 
-    doctor_user_id INT REFERENCES users(id),
-    doctor_name VARCHAR(150),      -- if external doctor
-    doctor_phone VARCHAR(150),  -- phone for external doctor
-    doctor_email VARCHAR(150),  -- email for external doctor
-    doctor_dkl_code VARCHAR(100),
+    doctor_dkl_code VARCHAR REFERENCES users(dkl_code),
 
     selected_tests TEXT[] NOT NULL,
 
-    assign_to INT REFERENCES users(id) NOT NULL, 
+    assign_to VARCHAR REFERENCES users(dkl_code) NOT NULL, 
     priority VARCHAR(20) CHECK (priority IN ('Urgent', 'Routine')) DEFAULT 'Routine',
 
     collection_date DATE,
     collection_time TIME,
 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP
 );
-
 
 CREATE TABLE tests (
     id SERIAL PRIMARY KEY,
