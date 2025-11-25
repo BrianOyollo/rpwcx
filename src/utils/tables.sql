@@ -50,6 +50,8 @@ CREATE TABLE requests (
     collection_date DATE,
     collection_time TIME,
 
+    request_status VARCHAR(20) CHECK(request_status IN ('pending', 'in-progress', 'completed', 'cancelled')),
+
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP
 );

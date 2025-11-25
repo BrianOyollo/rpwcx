@@ -22,7 +22,7 @@ st.header("Requests", divider="orange")
 conn = st.session_state["conn"]
 
 
-@st.cache_data(ttl=60 * 5)
+@st.cache_data(ttl=60*2)
 def prepare_tests_df():
     """
     Fetches tests from DB and flattens into a DataFrame with:
@@ -102,7 +102,7 @@ def search_tests(df):
                     st.rerun()
 
 
-@st.cache_data(ttl=60 * 5)
+@st.cache_data(ttl=60)
 def fetch_doctors():
     try:
         doctors_df = conn.query(
@@ -119,7 +119,7 @@ def fetch_doctors():
         st.error("Error fetching doctors")
 
 
-@st.cache_data(ttl=60 * 5)
+@st.cache_data(ttl=60)
 def fetch_phlebotomists():
     try:
         phlebotomists_df = conn.query(

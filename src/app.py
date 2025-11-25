@@ -38,9 +38,10 @@ dashboard = st.Page(
     "admin_pages/dashboard.py", title="Dashboard", icon=":material/dashboard:"
 )
 users = st.Page("admin_pages/users.py", title="Users", icon=":material/group:")
-requests = st.Page(
+new_lab_request = st.Page(
     "admin_pages/new_request.py", title="Lab Request Form", icon=":material/assignment:"
 )
+lab_requests = st.Page("admin_pages/lab_requests.py", title="Lab Requests")
 tests = st.Page("admin_pages/tests.py", title="Tests", icon=":material/lab_panel:")
 
 # general user
@@ -82,7 +83,7 @@ if st.user.is_logged_in:
     user_type = db_user.iloc[0]["user_type"]
     if user_type == "admin":
         pages = {
-            "Admin": [dashboard, users, requests, tests],
+            "Admin": [dashboard, users, tests, lab_requests, new_lab_request],
             # "Users": [users],
             "Account": [profile_page, logout_page],
         }
