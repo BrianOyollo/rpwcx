@@ -5,4 +5,4 @@ import re
 
 conn = st.connection("postgresql", type="sql")
 
-st.header("Dashboard", divider="orange")
+st.title("Dashboard")

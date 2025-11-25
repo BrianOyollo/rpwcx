@@ -12,7 +12,7 @@ duck_conn = st.session_state["duck_conn"]
 if "users_upated" not in st.session_state:
     st.session_state.users_updated = False
 
-st.header("Users", divider="orange")
+st.title("Users")
 
 
 @st.cache_data(ttl=60 * 2)
@@ -107,6 +107,8 @@ with tab1:
                 ),
             },
         )
+        total_users = len(fetch_all_users())
+        st.caption(f"Showing {len(users_df)} of {total_users}")
 
     @st.dialog("New User")
     def add_new_user():
@@ -345,16 +347,14 @@ with tab2:
                     ),
                 },
             )
+            st.caption(f"Total users {len(modified_df)}")
 
             # st.dataframe(modified_df)
 
         with st.container(horizontal=True, horizontal_alignment="center"):
             if modified_df.equals(users_df):
                 with st.container(horizontal=False):
-                    st.caption("Click any cell to edit")
-                    st.caption(
-                        ":red[**Note:**] Any new rows added here will not be saved"
-                    )
+                    st.caption("Click any cell to edit. :red[Any new rows added here will not be saved]")
 
             else:
                 undo = st.button("Reset", icon=":material/undo:", key="tab2_refresh")
