@@ -84,7 +84,7 @@ with tab1:
         st.dataframe(
             users_df,
             hide_index=True,
-            height="stretch",
+            # height="stretch",
             column_order=(
                 "dkl_code",
                 "name",
@@ -314,7 +314,7 @@ with tab2:
                 users_df,
                 key=f"tab2_editor_{st.session_state['editor_key']}",
                 hide_index=True,
-                height="stretch",
+                # height="stretch",
                 num_rows="dynamic",
                 column_order=(
                     "dkl_code",

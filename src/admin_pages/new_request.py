@@ -111,7 +111,7 @@ def fetch_doctors():
             FROM users
             WHERE user_type='doctor' AND active=true AND is_deleted=false
             ORDER BY name ASC;
-            """
+            """, ttl=0
         )
         return doctors_df
 
@@ -128,7 +128,7 @@ def fetch_phlebotomists():
             FROM users
             WHERE user_type='phlebotomist' AND active=true AND is_deleted=false
             ORDER BY name ASC;
-            """
+            """, ttl=0
         )
         return phlebotomists_df
 
