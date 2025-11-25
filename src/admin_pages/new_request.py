@@ -62,9 +62,9 @@ def search_tests(df):
     with st.container(border=False, horizontal=False, horizontal_alignment="center"):
         if q:
             results = df[
-                df["name"].str.lower().str.contains(q)
-                | df["code"].astype(str).str.contains(q)
-                | df["category"].str.lower().str.contains(q)
+                df["name"].str.lower().str.contains(q.lower())
+                | df["code"].astype(str).str.contains(q.lower())
+                | df["category"].str.lower().str.contains(q.lower())
             ]
 
             options = results["name"].to_list()
