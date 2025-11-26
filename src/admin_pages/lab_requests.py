@@ -71,7 +71,7 @@ q = st.text_input("Search", placeholder='Search', label_visibility='collapsed')
 with st.container(border=False, horizontal=True, horizontal_alignment='left', height=450):
     for request in requests:
         with st.container(border=True, width=550):
-            cols = st.columns([.8,.2], vertical_alignment='center')
+            cols = st.columns([.7,.3], vertical_alignment='center')
             with cols[0]:
                 btn = st.button(f":blue[**{request['patient'].strip()}**]", type='tertiary', key=f"{request['id']}")
 
@@ -88,11 +88,11 @@ with st.container(border=False, horizontal=True, horizontal_alignment='left', he
             st.write(f"**👨‍⚕️ Doctor:** {request['doctor']}")
             st.write(f"**🧪 Phlebotomist:** {request['phlebotomist']}")
             st.write(
-                f"**📅 Collection:** {request['collection_date']}  "
+                f"**📅 Test Date:** {request['collection_date']}  "
                 f"**⏰ Time:** {request['collection_time']}"
             )
             
             st.write("")
             with st.container(border=False, horizontal=True):
-                req_edit_btn = st.button(":blue[Edit]", icon=":material/edit:", type="secondary",key=f"edit{request['id']}")
-                req_del_btn = st.button(":red[Delete]", icon=":material/delete:", type="secondary",key=f"del{request['id']}")
+                req_edit_btn = st.button(":blue[Edit]", icon=":material/edit:", type="tertiary",key=f"edit{request['id']}")
+                req_del_btn = st.button(":red[Delete]", icon=":material/delete:", type="tertiary",key=f"del{request['id']}")
