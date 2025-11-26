@@ -39,6 +39,9 @@ def fetch_requests():
     )
     return requests
 
+@st.dialog(":green[Request Details]")
+def request_details(request):
+    st.write(request)
 
 @st.dialog("Delete Lab Request")
 def delete_lab_request(request_id):
@@ -65,12 +68,14 @@ def delete_lab_request(request_id):
 
 # st.write(requests)
 requests_df = fetch_requests()
-requests = requests_df.to_dict(orient="records")
+
 
 with st.container(border=False, horizontal=True, horizontal_alignment='distribute', vertical_alignment='bottom'):
     q = st.text_input("Search", placeholder='Search', label_visibility='collapsed')
     if q:
         requests = [request for request in requests_df.to_dict(orient="records") if q.lower() in request['patient'].lower()]
+    else:
+        requests = requests_df.to_dict(orient="records")
 
     new_req_btn = st.button("+ Request", icon=":material/add:")
     if new_req_btn:
@@ -86,7 +91,9 @@ with st.container(border=False, horizontal=True, horizontal_alignment='left', he
         with st.container(border=True, width=600):
             with st.container(border=False, horizontal=True, horizontal_alignment='distribute', vertical_alignment='center'):
                 with st.container(border=False, horizontal=False, horizontal_alignment='left'):
-                    btn = st.button(f":blue[**{request['patient'].strip()}**]", type='tertiary', key=f"{request['id']}")
+                    req_details_btn = st.button(f":blue[**{request['patient'].strip()}**]", type='tertiary', key=f"{request['id']}")
+                    if req_details_btn:
+                        request_details(request)
 
                 with st.container(border=False, horizontal=True, horizontal_alignment='right', width=110):
                     status_color = {
@@ -109,3 +116,5 @@ with st.container(border=False, horizontal=True, horizontal_alignment='left', he
             with st.container(border=False, horizontal=True):
                 req_edit_btn = st.button(":blue[Edit]", icon=":material/edit:", type="secondary",key=f"edit{request['id']}")
                 req_del_btn = st.button(":red[Delete]", icon=":material/delete:", type="secondary",key=f"del{request['id']}")
+                if req_del_btn:
+                    delete_lab_request(request['id'])
