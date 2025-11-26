@@ -3,29 +3,28 @@ import re
 import pandas as pd
 
 
-if st.user.is_logged_in:
-    st.user["email"]
-else:
+if not st.user.is_logged_in:
     st.write("You don't have permission to view this page!")
+    st.stop()
 
 conn = st.connection("postgresql", type="sql")
+user_info = conn.query("select * from users where email=:email", params={"email":st.user.email})
 
+# user_info 
+user_data = user_info.to_dict(orient='records')[0]
 
-def fetch_doctors():
-    try:
-        doctors_df = conn.query(
-            """
-            SELECT CONCAT_WS('-', name, dkl_code
-            FROM users
-            WHERE user_type='doctor' AND active=true AND is_deleted=false
-            ORDER BY name ASC;
-            """
-        )
-        return doctors_df
+# user_data
 
-    except Exception as e:
-        st.error("Error fetching doctors")
+with st.container(border=False, horizontal=False, vertical_alignment='top'):
+    with st.container(border=False, horizontal=True, horizontal_alignment="center",vertical_alignment='top'):
+        st.image(st.user.picture)
+        st.header(st.user['name'], width='content')
 
+    with st.container(border=False, horizontal=False, horizontal_alignment="left",vertical_alignment='top'):
+        st.write(f":orange[Email]: {st.user.email}")
+        st.write(f":orange[Phone]: {user_data['contact']}")
+        st.write(f":orange[Status]: {"Verified" if st.user.email_verified else "Not Verified"}")
+        st.write(f":orange[Role]: {user_data['user_type'].title()}")
+        st.write(f":orange[Date Joined]: {user_data['created_at']}")
 
-df = fetch_doctors()
-st.write(df)
+# st.write(st.user)
