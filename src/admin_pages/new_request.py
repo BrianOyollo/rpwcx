@@ -150,14 +150,14 @@ def create_request():
         data["new_doctor_doc_email"] = None
 
     db_data = {
-        "first_name": data.get("patient_first_name"),
-        "surname": data.get("patient_first_surname"),
-        "middle_name": data.get("patient_middle_name"),
-        "dob": data.get("patient_dob"),
-        "gender": data.get("patient_gender"),
-        "phone": data.get("patient_phone"),
-        "email": data.get("patient_email"),
-        "location": data.get("patient_location"),
+        "first_name": data.get("patient_first_name").strip(),
+        "surname": data.get("patient_first_surname").strip(),
+        "middle_name": data.get("patient_middle_name").strip(),
+        "dob": data.get("patient_dob").strip(),
+        "gender": data.get("patient_gender").strip(),
+        "phone": data.get("patient_phone").strip(),
+        "email": data.get("patient_email").strip(),
+        "location": data.get("patient_location").strip(),
         # doctor in the system
         "doctor_dkl_code": data.get("doctor").split("-")[1].strip(),
         # tests

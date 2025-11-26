@@ -26,7 +26,7 @@ def fetch_requests():
             id,
             CONCAT(r.first_name,' ',r.surname, ' ',r.middle_name)  AS patient, 
             r.dob, r.gender, r.phone, r.email, r.location,
-            r.selected_tests, r.collection_date, r.collection_time,
+            r.selected_tests, r.collection_date, r.collection_time,priority,
             d.name as doctor,
             p.name as phlebotomist,
             r.request_status, r.created_at, r.updated_at          
@@ -47,7 +47,7 @@ def request_details(request):
         st.write(f":orange[**Name**]: **{request['patient'].strip()}**")
         st.write(f":orange[**Gender**]: **{request['gender']}**")
         st.write(f":orange[**DoB**]: **{request['dob']}**")
-        st.write(f":orange[**Location**]: **{request['location']}**")
+        st.write(f":orange[**Location**]: **{request['location'].strip()}**")
         st.write(f":orange[**Contacts**]: **{request['phone'].strip()},{request['email'].strip()}**")
         
         st.caption("------------ Doctor/Phlebotomist ------------ ")
@@ -55,6 +55,9 @@ def request_details(request):
         st.write(f":orange[**Phlebotomist**]: **{request['phlebotomist']}**")
 
         st.caption("------------ Test Details ------------ ")
+        st.write(f":orange[**Created on**]: **{request['created_at'].strftime("%b %d, %Y • %I:%M %p")}**")
+        st.write(f":orange[**Updated on**]: **{request['updated_at'] if request['updated_at']  else "N/A"}**")
+        st.write(f":orange[**Request Priority**]: **{request['priority']}**")
         st.write(f":orange[**Collection Date**]: **{request['collection_date']} at {request['collection_time'].strftime("%H:%M %p")}**")
         tests_badges = [f":gray-badge[{test}]" for test in request['selected_tests']]
         st.markdown(f":orange[**Tests**]: {' '.join(tests_badges)}")
