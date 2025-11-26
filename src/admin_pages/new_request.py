@@ -87,23 +87,23 @@ def search_tests(df):
                     st.rerun(scope="fragment")
 
     with st.expander("Selected Tests", expanded=False):
-        with st.container(border=False, horizontal=True, height=200):
+        with st.container(border=False, horizontal=True, horizontal_alignment='left', height=200):
             for idx, test in enumerate(st.session_state.selected_tests):
-                checkbox = st.checkbox(test, key=f"{test}{idx}", value=True, width=350)
+                checkbox = st.checkbox(test, key=f"{test}{idx}", value=True)
                 if not checkbox:
                     st.session_state.selected_tests.remove(test)
                     st.rerun(scope="fragment")
 
         with st.container(horizontal=True, horizontal_alignment="center"):
             if st.session_state.selected_tests:
-                clear = st.button("Clear selection")
+                clear = st.button("Clear Tests")
                 if clear:
-                    st.session_state.selected_tests = []
-                    st.rerun()
+                    st.session_state.selected_tests = set()
+                    st.rerun(scope='fragment')
 
 
 @st.cache_data(ttl=60)
-def fetch_doctors():
+def fetch_doctors() -> pd.DataFrame:
     try:
         doctors_df = conn.query(
             """
@@ -121,7 +121,7 @@ def fetch_doctors():
 
 
 @st.cache_data(ttl=60)
-def fetch_phlebotomists():
+def fetch_phlebotomists() -> pd.DataFrame:
     try:
         phlebotomists_df = conn.query(
             """
@@ -150,10 +150,10 @@ def create_request():
         data["new_doctor_doc_email"] = None
 
     db_data = {
-        "first_name": data.get("patient_first_name").strip(),
-        "surname": data.get("patient_first_surname").strip(),
-        "middle_name": data.get("patient_middle_name").strip(),
-        "dob": data.get("patient_dob").strip(),
+        "first_name": data.get("patient_first_name").strip().replace(" ", "_"),
+        "surname": data.get("patient_surname").strip().replace(" ", "_"),
+        "middle_name": data.get("patient_middle_name", "").strip().replace(" ", "_"),
+        "dob": data.get("patient_dob"),
         "gender": data.get("patient_gender").strip(),
         "phone": data.get("patient_phone").strip(),
         "email": data.get("patient_email").strip(),
@@ -183,7 +183,7 @@ def create_request():
 
             st.session_state.lrf_form = {}
             st.session_state.selected_tests = set()
-            st.rerun()
+            st.switch_page("admin_pages/lab_requests.py")
         except Exception as e:
             st.print(e)
             st.error(
@@ -221,14 +221,16 @@ with lab_req_formm_ctn:
                     with st.container(horizontal=True, horizontal_alignment="left"):
                         f_name = st.text_input(
                             "First Name*",
-                            value=st.session_state.lrf_form.get(
-                                "patient_first_name", None
-                            ),
                             width=350,
                         )
-                        s_name = st.text_input("Surname*", value="", width=350)
+                        s_name = st.text_input(
+                            "Surname*", 
+                            width=350
+                        )
                         m_name = st.text_input(
-                            "Middle Name", value="", width=350, placeholder="optional"
+                            "Middle Name", 
+                            width=350, 
+                            placeholder="optional"
                         )
 
                     with st.container(horizontal=True, horizontal_alignment="left"):
@@ -239,17 +241,32 @@ with lab_req_formm_ctn:
                             key="dob",
                             width=350,
                         )
+
+                        gender_options = ["Male", "Female", "Other"]
+                        current_gender = st.session_state.lrf_form.get("patient_gender", None) 
                         gender = st.selectbox(
                             "Gender*",
-                            options=["Male", "Female", "Other"],
-                            index=None,
+                            options=gender_options,
                             width=350,
                         )
-                        location = st.text_input("Location*", width=350)
+
+                        location = st.text_input(
+                            "Location*", 
+                            width=350,
+                        )
 
                     with st.container(horizontal=True, horizontal_alignment="left"):
-                        contact = st.text_input("Phone No:*", key="phone", width=350)
-                        email = st.text_input("Email", key="email", width=350)
+                        contact = st.text_input(
+                            "Phone No:*", 
+                            key="phone", 
+                            width=350,
+                        )
+
+                        email = st.text_input(
+                            "Email", 
+                            key="email", 
+                            width=350,
+                        )
 
                     with st.container(horizontal=False, horizontal_alignment="center"):
                         save_patient_details_btn = st.form_submit_button(
@@ -269,15 +286,11 @@ with lab_req_formm_ctn:
                                 )
                             else:
                                 st.session_state.lrf_form["patient_first_name"] = f_name
-                                st.session_state.lrf_form["patient_first_surname"] = (
-                                    s_name
-                                )
-                                st.session_state.lrf_form["patient_middle_name"] = (
-                                    m_name
-                                )
+                                st.session_state.lrf_form["patient_surname"] = s_name
+                                st.session_state.lrf_form["patient_middle_name"] = m_name if m_name else ""
                                 st.session_state.lrf_form["patient_dob"] = dob
                                 st.session_state.lrf_form["patient_phone"] = contact
-                                st.session_state.lrf_form["patient_email"] = email
+                                st.session_state.lrf_form["patient_email"] = email if email else "N/A"
                                 st.session_state.lrf_form["patient_gender"] = gender
                                 st.session_state.lrf_form["patient_location"] = location
 
@@ -314,6 +327,7 @@ with lab_req_formm_ctn:
 
                 st.space()
                 with st.container(horizontal=False, horizontal_alignment="center"):
+
                     if "patient_first_name" not in st.session_state.lrf_form:
                         st.form_submit_button(
                             "Please fill required fields in patient details",
