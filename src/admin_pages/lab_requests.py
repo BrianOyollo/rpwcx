@@ -284,7 +284,7 @@ if st.session_state.lr_mode == "edit" and st.session_state.get("request_to_edit"
                     horizontal=False,
                     horizontal_alignment="left",
                     vertical_alignment="top",
-                    height=465,
+                    height=400,
                 ):
                     df = prepare_tests_df()
                     search_tests(df)
