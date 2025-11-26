@@ -88,8 +88,8 @@ with st.container(border=False, horizontal=True, horizontal_alignment='left', he
             st.write(f"**👨‍⚕️ Doctor:** {request['doctor']}")
             st.write(f"**🧪 Phlebotomist:** {request['phlebotomist']}")
             st.write(
-                f"**📅 Test Date:** {request['collection_date']}  "
-                f"**⏰ Time:** {request['collection_time']}"
+                f"📅 **Date:** {request['collection_date']}  "
+                f"⏰ **Time:** {request['collection_time'].strftime("%H:%M %p")}"
             )
             
             st.write("")
