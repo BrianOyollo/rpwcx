@@ -71,19 +71,19 @@ q = st.text_input("Search", placeholder='Search', label_visibility='collapsed')
 with st.container(border=False, horizontal=True, horizontal_alignment='left', height=450):
     for request in requests:
         with st.container(border=True, width=550):
-            cols = st.columns([.7,.3], vertical_alignment='center')
-            with cols[0]:
-                btn = st.button(f":blue[**{request['patient'].strip()}**]", type='tertiary', key=f"{request['id']}")
+            with st.container(border=False, horizontal=True, horizontal_alignment='distribute', vertical_alignment='center'):
+                with st.container(border=False, horizontal=False, horizontal_alignment='left'):
+                    btn = st.button(f":blue[**{request['patient'].strip()}**]", type='tertiary', key=f"{request['id']}")
 
-            with cols[1]:
-                status_color = {
-                    "pending": "orange",
-                    "in-progress": "blue",
-                    "completed": "green",
-                    "cancelled": "red"
-                }
-                req_status = request['request_status']
-                st.write(f":{status_color[req_status]}-badge[{req_status.title()}]")
+                with st.container(border=False, horizontal=True, horizontal_alignment='right', width=110):
+                    status_color = {
+                        "pending": "orange",
+                        "in-progress": "blue",
+                        "completed": "green",
+                        "cancelled": "red"
+                    }
+                    req_status = request['request_status']
+                    st.badge(req_status.title(), color=status_color[req_status])
 
             st.write(f"**👨‍⚕️ Doctor:** {request['doctor']}")
             st.write(f"**🧪 Phlebotomist:** {request['phlebotomist']}")
