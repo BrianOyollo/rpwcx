@@ -41,7 +41,23 @@ def fetch_requests():
 
 @st.dialog(":green[Request Details]")
 def request_details(request):
-    st.write(request)
+    
+    with st.container(border=False, horizontal=False, horizontal_alignment='center', height=450):
+        st.caption("------------ Patient Details ------------ ")
+        st.write(f":orange[**Name**]: **{request['patient'].strip()}**")
+        st.write(f":orange[**Gender**]: **{request['gender']}**")
+        st.write(f":orange[**DoB**]: **{request['dob']}**")
+        st.write(f":orange[**Location**]: **{request['location']}**")
+        st.write(f":orange[**Contacts**]: **{request['phone'].strip()},{request['email'].strip()}**")
+        
+        st.caption("------------ Doctor/Phlebotomist ------------ ")
+        st.write(f":orange[**Dcotor**]: **{request['doctor']}**")
+        st.write(f":orange[**Phlebotomist**]: **{request['phlebotomist']}**")
+
+        st.caption("------------ Test Details ------------ ")
+        st.write(f":orange[**Collection Date**]: **{request['collection_date']} at {request['collection_time'].strftime("%H:%M %p")}**")
+        tests_badges = [f":gray-badge[{test}]" for test in request['selected_tests']]
+        st.markdown(f":orange[**Tests**]: {' '.join(tests_badges)}")
 
 @st.dialog("Delete Lab Request")
 def delete_lab_request(request_id):
