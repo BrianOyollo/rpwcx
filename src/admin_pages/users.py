@@ -354,7 +354,9 @@ with tab2:
         with st.container(horizontal=True, horizontal_alignment="center"):
             if modified_df.equals(users_df):
                 with st.container(horizontal=False):
-                    st.caption("Click any cell to edit. :red[Any new rows added here will not be saved]")
+                    st.caption(
+                        "Click any cell to edit. :red[Any new rows added here will not be saved]"
+                    )
 
             else:
                 undo = st.button("Reset", icon=":material/undo:", key="tab2_refresh")

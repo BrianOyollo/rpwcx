@@ -22,7 +22,7 @@ st.header("Requests", divider="orange")
 conn = st.session_state["conn"]
 
 
-@st.cache_data(ttl=60*2)
+@st.cache_data(ttl=60 * 2)
 def prepare_tests_df():
     """
     Fetches tests from DB and flattens into a DataFrame with:
@@ -107,11 +107,12 @@ def fetch_doctors():
     try:
         doctors_df = conn.query(
             """
-            SELECT CONCAT_WS(' - ', name, dkl_code)
+            SELECT CONCAT_WS(' - ', name, dkl_code) AS doctor
             FROM users
             WHERE user_type='doctor' AND active=true AND is_deleted=false
             ORDER BY name ASC;
-            """, ttl=0
+            """,
+            ttl=0,
         )
         return doctors_df
 
@@ -124,11 +125,12 @@ def fetch_phlebotomists():
     try:
         phlebotomists_df = conn.query(
             """
-            SELECT CONCAT_WS(' - ', name, dkl_code)
+            SELECT CONCAT_WS(' - ', name, dkl_code) AS  phlebotomist
             FROM users
             WHERE user_type='phlebotomist' AND active=true AND is_deleted=false
             ORDER BY name ASC;
-            """, ttl=0
+            """,
+            ttl=0,
         )
         return phlebotomists_df
 
@@ -267,8 +269,12 @@ with lab_req_formm_ctn:
                                 )
                             else:
                                 st.session_state.lrf_form["patient_first_name"] = f_name
-                                st.session_state.lrf_form["patient_first_surname"] = s_name
-                                st.session_state.lrf_form["patient_middle_name"] = m_name
+                                st.session_state.lrf_form["patient_first_surname"] = (
+                                    s_name
+                                )
+                                st.session_state.lrf_form["patient_middle_name"] = (
+                                    m_name
+                                )
                                 st.session_state.lrf_form["patient_dob"] = dob
                                 st.session_state.lrf_form["patient_phone"] = contact
                                 st.session_state.lrf_form["patient_email"] = email
@@ -342,9 +348,12 @@ with lab_req_formm_ctn:
                             st.session_state.lrf_form["doctor"] = doctor
                             st.session_state.lrf_form["assign_to"] = assign_to
                             st.session_state.lrf_form["priority"] = priority
-                            st.session_state.lrf_form["collection_date"] = collection_date
-                            st.session_state.lrf_form["collection_time"] = collection_time
-                        
+                            st.session_state.lrf_form["collection_date"] = (
+                                collection_date
+                            )
+                            st.session_state.lrf_form["collection_time"] = (
+                                collection_time
+                            )
 
                             st.toast(":green[Appointment details saved]")
 
