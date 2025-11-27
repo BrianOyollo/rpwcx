@@ -45,50 +45,73 @@ def categorize_selected_tests(selected_tests):
     return categorized
 
 
-
-with st.container(border=False, horizontal=False, horizontal_alignment='left', height=450):
-    for test in lab_requests_list:
-        with st.container(border=True, horizontal=False):
-            patient = f"{test['first_name'].replace("_", " ")} {test['middle_name'].replace("_", " ")} {test['surname'].replace("_", " ")}"
-            gender = test['gender']
-            age = relativedelta(datetime.today(), test['dob']).years
-            collection_date = test['collection_date'].strftime('%b %d, %Y')
-            collection_time = test['collection_time'].strftime('%I:%M %p')
-            if test['priority'] == 'Urgent':
-                test_priority = "🚨 :red[Urgent]"
+def requests_list(tab:str = None):
+    with st.container(border=False, horizontal=False, horizontal_alignment='left', height=450):
+        
+        
+        for test in lab_requests_list:
+            if tab is None:
+                tab_list = lab_requests_list
             else:
-                test_priority = "📋 Routine"
+                tab_list = [test for test in lab_requests_list if test['request_status'].strip().lower() == tab.strip().lower()]
 
-            st.write(f":blue[**{patient}** ({gender[0]}, {age})]")
+        for test in tab_list:
+            with st.container(border=True, horizontal=False):
+                patient = f"{test['first_name'].replace("_", " ")} {test['middle_name'].replace("_", " ")} {test['surname'].replace("_", " ")}"
+                gender = test['gender']
+                age = relativedelta(datetime.today(), test['dob']).years
+                collection_date = test['collection_date'].strftime('%b %d, %Y')
+                collection_time = test['collection_time'].strftime('%I:%M %p')
+                if test['priority'] == 'Urgent':
+                    test_priority = "🚨 :red[Urgent]"
+                else:
+                    test_priority = "📋 Routine"
 
-                
-                
+                st.write(f":blue[**{patient}** ({gender[0]}, {age})]")
 
-            st.markdown(f"""
-                :gray-badge[**☎️ {test['phone']}**]
-                :gray-badge[**📍 {test['location']}**]
-                :gray-badge[**⏰ {collection_date} • {collection_time}**]
-                :gray-badge[**{test_priority}**]
-            """)
+                st.markdown(f"""
+                    :gray-badge[**☎️ {test['phone']}**]
+                    :gray-badge[**📍 {test['location']}**]
+                    :gray-badge[**⏰ {collection_date} • {collection_time}**]
+                    :gray-badge[**{test_priority}**]
+                """)
 
-            # with st.expander("Tests"):
+                # with st.expander("Tests"):
 
-            with st.container(border=False, horizontal=True, horizontal_alignment='left', vertical_alignment='center'):
+                with st.container(border=False, horizontal=True, horizontal_alignment='left', vertical_alignment='center'):
 
-                with st.popover("🧪 Tests"):
-                    categorized_tests = categorize_selected_tests(test['selected_tests'])
-                    for k,v in categorized_tests.items():
-                        st.write(f"**:orange[{k}]**")
-                        st.markdown(f",".join([f":blue-badge[{test}]" for test in v ]))
+                    with st.popover("🧪 Tests"):
+                        categorized_tests = categorize_selected_tests(test['selected_tests'])
+                        for k,v in categorized_tests.items():
+                            st.write(f"**:orange[{k}]**")
+                            st.markdown(f",".join([f":blue-badge[{test}]" for test in v ]))
 
-                test_status = test['request_status']
-                test_status_color = {
-                    "pending": "orange",
-                    "in-progress": "blue",
-                    "completed": "green",
-                    "cancelled": "red",
-                }
-                with st.popover(f":{test_status_color[test_status]}[{test_status.title()}]", type='secondary', help="No idea"):
-                    st.write('hello')
+                    test_status = test['request_status']
+                    test_status_color = {
+                        "pending": "orange",
+                        "in-progress": "blue",
+                        "completed": "green",
+                        "cancelled": "red",
+                    }
+
+                    with st.popover(f":{test_status_color[test_status]}[{test_status.title()}]", type='secondary', help="No idea"):
+                        st.write('hello')
+
 
             
+tabs = st.tabs(['All', 'Pending', 'In Progress', "Completed", "Cancelled"])
+
+with tabs[0]:
+    requests_list()
+
+with tabs[1]:
+    requests_list(tab='Pending')
+
+with tabs[2]:
+    requests_list(tab='In-Progress')
+
+with tabs[3]:
+    requests_list(tab='Completed')
+
+with tabs[4]:
+    requests_list(tab='Cancelled')
