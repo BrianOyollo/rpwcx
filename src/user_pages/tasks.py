@@ -1,6 +1,7 @@
 import streamlit as st
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+from sqlalchemy import text, exc
 
 
 conn = st.session_state["conn"]
@@ -53,27 +54,27 @@ def requests_list(tab:str = None):
             if tab is None:
                 tab_list = lab_requests_list
             else:
-                tab_list = [test for test in lab_requests_list if test['request_status'].strip().lower() == tab.strip().lower()]
+                tab_list = [req for req in lab_requests_list if req['request_status'].strip().lower() == tab.strip().lower()]
 
-        for test in tab_list:
+        for req in tab_list:
             with st.container(border=True, horizontal=False):
-                patient = f"{test['first_name'].replace("_", " ")} {test['middle_name'].replace("_", " ")} {test['surname'].replace("_", " ")}"
-                gender = test['gender']
-                age = relativedelta(datetime.today(), test['dob']).years
-                collection_date = test['collection_date'].strftime('%b %d, %Y')
-                collection_time = test['collection_time'].strftime('%I:%M %p')
-                if test['priority'] == 'Urgent':
-                    test_priority = "🚨 :red[Urgent]"
+                patient = f"{req['first_name'].replace("_", " ")} {req['middle_name'].replace("_", " ")} {req['surname'].replace("_", " ")}"
+                gender = req['gender']
+                age = relativedelta(datetime.today(), req['dob']).years
+                collection_date = req['collection_date'].strftime('%b %d, %Y')
+                collection_time = req['collection_time'].strftime('%I:%M %p')
+                if req['priority'] == 'Urgent':
+                    req_priority = "🚨 :red[Urgent]"
                 else:
-                    test_priority = "📋 Routine"
+                    req_priority = "📋 Routine"
 
                 st.write(f":blue[**{patient}** ({gender[0]}, {age})]")
 
                 st.markdown(f"""
-                    :gray-badge[**☎️ {test['phone']}**]
+                    :gray-badge[**☎️ {req['phone']}**]
                     :gray-badge[**📍 {test['location']}**]
                     :gray-badge[**⏰ {collection_date} • {collection_time}**]
-                    :gray-badge[**{test_priority}**]
+                    :gray-badge[**{req_priority}**]
                 """)
 
                 # with st.expander("Tests"):
@@ -81,24 +82,55 @@ def requests_list(tab:str = None):
                 with st.container(border=False, horizontal=True, horizontal_alignment='left', vertical_alignment='center'):
 
                     with st.popover("🧪 Tests"):
-                        categorized_tests = categorize_selected_tests(test['selected_tests'])
+                        categorized_tests = categorize_selected_tests(req['selected_tests'])
                         for k,v in categorized_tests.items():
                             st.write(f"**:orange[{k}]**")
-                            st.markdown(f",".join([f":blue-badge[{test}]" for test in v ]))
+                            st.markdown(f",".join([f":blue-badge[{req}]" for req in v ]))
 
-                    test_status = test['request_status']
-                    test_status_color = {
+                    req_status = req['request_status']
+                    req_status_color = {
                         "pending": "orange",
                         "in-progress": "blue",
                         "completed": "green",
                         "cancelled": "red",
                     }
 
-                    with st.popover(f":{test_status_color[test_status]}[{test_status.title()}]", type='secondary', help="No idea"):
-                        st.write('hello')
+                    # request_status_options = ['pending', 'in-progress', 'completed', 'cancelled']
+                    # request_status = st.selectbox(
+                    #     "status",
+                    #     key=f"req_status_{test['id']}_{tab}",
+                    #     width = 135,
+                    #     options = request_status_options,
+                    #     index = request_status_options.index(test['request_status']),
+                    #     label_visibility='collapsed',
+                    #     format_func = lambda x: x.title()
+                    # )
+                    def update_req_status(id:int, radio_key:str):
+                        new_status = st.session_state[radio_key]
+                        with conn.session as session:
+                            try:
+                                query = text("UPDATE requests SET request_status=:request_status WHERE id=:id")
+                                session.execute(query, {"request_status":new_status, "id":id})
+                                session.commit()
+                            except Exception as e:
+                                print(e)
+                                st.toast(":red['Error updating request status. Please try again']")
+
+                    with st.popover(f":{req_status_color[req_status]}[{req_status.title()}]", type='secondary'):
+                        request_status_options = ['pending', 'in-progress', 'completed']
+                        radio_key = f"status_radio_{req['id']}_{tab}"
+                        updated_status = st.radio(
+                            'Update Status',
+                            key = radio_key,
+                            options = request_status_options,
+                            index = request_status_options.index(req_status),
+                            format_func = lambda x: x.title(),
+                            on_change=update_req_status,
+                            args=(req['id'], radio_key)
+                        )
+                        
 
 
-            
 tabs = st.tabs(['All', 'Pending', 'In Progress', "Completed", "Cancelled"])
 
 with tabs[0]:
