@@ -64,6 +64,7 @@ if st.user.is_logged_in:
             ttl=0,
         )
     except Exception as e:
+        print(e)
         st.error(
             "Error fetching users from the db. Contact system admin for assistance if the issue persists"
         )

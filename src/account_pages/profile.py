@@ -16,7 +16,7 @@ user_data = user_info.to_dict(orient='records')[0]
 # user_data
 
 with st.container(border=False, horizontal=False, vertical_alignment='top'):
-    with st.container(border=False, horizontal=True, horizontal_alignment="center",vertical_alignment='top'):
+    with st.container(border=False, horizontal=False, horizontal_alignment="center",vertical_alignment='top'):
         st.image(st.user.picture)
         st.header(st.user['name'], width='content')
 
