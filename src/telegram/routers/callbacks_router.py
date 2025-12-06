@@ -61,17 +61,43 @@ async def show_task_details(callback_query:CallbackQuery, callback_data:TaskDeta
                 urgency = task[12]
                 appointment_date = task[13].strftime('%b %d, %Y')
                 appointment_time = task[14].strftime('%I:%M %p')
-                tests = ", ".join(task[10]) if task[10] else "N/A"
                 status = task[-1].title()
+                location = task[8]
+                # tests = ", ".join(task[10]) if task[10] else "N/A"
 
+                # categorize tests
+                raw_tests = task[10]
+                categorized_tests = utils.categorize_selected_tests(raw_tests)
+
+                tests_html = ""
+                for cat, tests in categorized_tests.items():
+                    tests_html += f"<b>{cat}</b>\n"
+                    for t in tests:
+                        tests_html += f"• <i>{t}</i>\n"
+                    tests_html += f"\n"
                 text = (
-                    f"🧾 *Task #{task_id}*\n"
-                    f"👤 *Patient:* {patient}\n"
-                    f"⚠️ *Urgency:* {urgency}\n"
-                    f"📅 *Appointment:* {appointment_date} • {appointment_time}\n\n"
-                    f"🧪 *Tests:* {tests}\n\n"
-                    f"📌 *Status:* {status}"
+                    f"<b>Task ID</b>\n"
+                    f"#{task_id}\n\n"
+
+                    f"👤 <b>Patient:</b>\n"
+                    f"{patient}\n\n"
+
+                    f"📍 <b>Location:</b>\n"
+                    f"{location}\n\n"
+
+                    f"⚠️ <b>Urgency:</b>\n"
+                    f"{urgency}\n\n"
+
+                    f"📅 <b>Appointment:</b>\n"
+                    f"{appointment_date} • {appointment_time}\n\n"
+
+                    f"🧪 <b>Tests:</b>\n"
+                    f"{tests_html}\n\n"
+
+                    f"📌 <b>Status:</b>"
+                    f"{status}"
                 )
+
 
                 builder = InlineKeyboardBuilder()
                 builder.row(
@@ -83,7 +109,7 @@ async def show_task_details(callback_query:CallbackQuery, callback_data:TaskDeta
                 await bot.send_message(
                     chat_id=callback_query.from_user.id,
                     text=text,
-                    parse_mode="Markdown",
+                    parse_mode="HTML",
                     reply_markup=builder.as_markup()
                 )
 

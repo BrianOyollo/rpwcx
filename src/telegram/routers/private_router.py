@@ -134,6 +134,7 @@ async def all_user_tasks(message:Message, bot:Bot, command:CommandObject)->None:
                 for task in tasks:
                     task_id = task[0]
                     patient = f"{task[1]} {task[2]}"
+                    location = task[8]
                     urgency = task[12]
                     appointment_date = task[13].strftime('%b %d, %Y')
                     appointment_time = task[14].strftime('%I:%M %p')
@@ -154,6 +155,7 @@ async def all_user_tasks(message:Message, bot:Bot, command:CommandObject)->None:
                     preview = (
                         # f"🧾 *Task #{task_id}*\n"
                         f"👤 *{patient}*\n"
+                        f"📍 *{location}*\n"
                         f"⚠️ *Urgency:* {urgency}\n"
                         f"📅 *Appointment:* {appointment_date} • {appointment_time}\n"
                         f"📌 *Status:* {status}"
