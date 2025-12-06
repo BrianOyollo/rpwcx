@@ -407,7 +407,7 @@ else:
         border=False, horizontal=True, horizontal_alignment="left", height=450
     ):
         for request in requests:
-            with st.container(border=True, width=600):
+            with st.container(border=True, width=500):
                 with st.container(
                     border=False,
                     horizontal=True,

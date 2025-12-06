@@ -21,6 +21,7 @@ CREATE TABLE users (
     name VARCHAR(100) NOT NULL,
     contact VARCHAR(50),
     email VARCHAR(100) UNIQUE,
+    telegram_chat_id BIGINT UNIQUE,
     user_type VARCHAR(20) CHECK (user_type IN ('admin', 'phlebotomist', 'supervisor','doctor', 'other')) NOT NULL,
     active BOOLEAN DEFAULT TRUE,
     is_deleted BOOLEAN DEFAULT FALSE,

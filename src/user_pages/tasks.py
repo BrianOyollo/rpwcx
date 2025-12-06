@@ -9,19 +9,8 @@ conn = st.session_state["conn"]
 st.title("My Tasks")
 
 
-lab_requests = conn.query(
-    """
-    WITH user_info AS(
-        SELECT dkl_code FROM users WHERE email=:email
-    )
-    SELECT r.* 
-    FROM requests r
-    INNER JOIN user_info ui ON ui.dkl_code = r.assign_to
-    """,
-    params = {'email':st.user.email},
-    ttl=0
-)
-lab_requests_list = lab_requests.to_dict(orient='records')
+
+
 
 @st.cache_data(ttl=0)
 def fetch_categories_and_tests():
@@ -47,14 +36,26 @@ def categorize_selected_tests(selected_tests):
 
 
 def requests_list(tab:str = None):
+    lab_requests = conn.query(
+        """
+        WITH user_info AS(
+            SELECT dkl_code FROM users WHERE email=:email
+        )
+        SELECT r.* 
+        FROM requests r
+        INNER JOIN user_info ui ON ui.dkl_code = r.assign_to
+        """,
+        params = {'email':st.user.email},
+        ttl=0
+    )
+    lab_requests_list = lab_requests.to_dict(orient='records')
+
     with st.container(border=False, horizontal=False, horizontal_alignment='left', height=450):
         
-        
-        for test in lab_requests_list:
-            if tab is None:
-                tab_list = lab_requests_list
-            else:
-                tab_list = [req for req in lab_requests_list if req['request_status'].strip().lower() == tab.strip().lower()]
+        if tab is None:
+            tab_list = lab_requests_list
+        else:
+            tab_list = [req for req in lab_requests_list if req['request_status'].strip().lower() == tab.strip().lower()]
 
         for req in tab_list:
             with st.container(border=True, horizontal=False):
@@ -72,7 +73,7 @@ def requests_list(tab:str = None):
 
                 st.markdown(f"""
                     :gray-badge[**☎️ {req['phone']}**]
-                    :gray-badge[**📍 {test['location']}**]
+                    :gray-badge[**📍 {req['location']}**]
                     :gray-badge[**⏰ {collection_date} • {collection_time}**]
                     :gray-badge[**{req_priority}**]
                 """)
@@ -95,16 +96,6 @@ def requests_list(tab:str = None):
                         "cancelled": "red",
                     }
 
-                    # request_status_options = ['pending', 'in-progress', 'completed', 'cancelled']
-                    # request_status = st.selectbox(
-                    #     "status",
-                    #     key=f"req_status_{test['id']}_{tab}",
-                    #     width = 135,
-                    #     options = request_status_options,
-                    #     index = request_status_options.index(test['request_status']),
-                    #     label_visibility='collapsed',
-                    #     format_func = lambda x: x.title()
-                    # )
                     def update_req_status(id:int, radio_key:str):
                         new_status = st.session_state[radio_key]
                         with conn.session as session:
@@ -116,18 +107,20 @@ def requests_list(tab:str = None):
                                 print(e)
                                 st.toast(":red['Error updating request status. Please try again']")
 
-                    with st.popover(f":{req_status_color[req_status]}[{req_status.title()}]", type='secondary'):
-                        request_status_options = ['pending', 'in-progress', 'completed']
-                        radio_key = f"status_radio_{req['id']}_{tab}"
-                        updated_status = st.radio(
-                            'Update Status',
-                            key = radio_key,
-                            options = request_status_options,
-                            index = request_status_options.index(req_status),
-                            format_func = lambda x: x.title(),
-                            on_change=update_req_status,
-                            args=(req['id'], radio_key)
-                        )
+                    # with st.popover(f":{req_status_color[req_status]}[{req_status.title()}]", type='secondary'):
+                    request_status_options = ['pending', 'in-progress', 'completed']
+                    radio_key = f"status_radio_{req['id']}_{tab}"
+                    st.selectbox(
+                        'Update Status',
+                        key = radio_key,
+                        options = request_status_options,
+                        index = request_status_options.index(req_status),
+                        format_func = lambda x: x.title(),
+                        on_change=update_req_status,
+                        args=(req['id'], radio_key),
+                        label_visibility = 'collapsed',
+                        width=135
+                    )
                         
 
 
