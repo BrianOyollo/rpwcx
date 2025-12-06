@@ -10,6 +10,7 @@ from psycopg2 import errors
 
 import utils
 from routers.auth_router import auth_router
+from routers.private_router import private_router
 
 
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
@@ -20,7 +21,8 @@ async def main() -> None:
     dp = Dispatcher()
 
     dp.include_router(auth_router)
-    
+    dp.include_router(private_router)
+
     await dp.start_polling(bot)
 
 

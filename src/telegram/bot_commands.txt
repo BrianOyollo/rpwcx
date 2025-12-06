@@ -1,0 +1,5 @@
+/start – Start communication with the bot. (Private chat only)
+/register – Register your account to enable private access to assignments.
+/assignments – View all your active assignments.
+/completed – View assignments you have completed.
+/pending – View assignments that are still pending.
