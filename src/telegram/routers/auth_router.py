@@ -92,3 +92,38 @@ async def register_new_user(message:Message, command:CommandObject):
             \nWe experienced an error while registering your account.
             \nPlease try again later or contact the admin for support"""
         )
+
+async def user_is_group_member(user_id, bot:Bot) -> bool:
+    """
+    Checks if a user is a member of the specified Telegram group.
+    
+    :param user-id: The user_id to check.
+    :param bot: The Bot instance (injected by aiogram).
+    :param group_id: The target group ID (passed in the filter arguments).
+    :return: True if the user is a member, False otherwise.
+    """
+
+    try:
+        chat_member = await bot.get_chat_member(GROUP_ID, user_id)
+        return chat_member.status in ['member', 'creator', 'administrator']
+    except Exception as e:
+        print(e)
+        return False
+
+def user_is_in_db(user_id:int) -> bool:
+    """
+    Checks if the user exists in the custom database.
+    
+    :param message: The incoming message object.
+    :return: True if the user is found in the database, False otherwise.
+    """
+
+    try:
+        with utils.get_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute('SELECT 1 FROM users WHERE telegram_chat_id=%s', (user_id, ))
+                user_exists = cur.fetchone()
+                return user_exists is not None
+            
+    except Exception as e:
+        print(e)

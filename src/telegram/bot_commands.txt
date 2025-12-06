@@ -1,5 +1,7 @@
-/start – Start communication with the bot. (Private chat only)
-/register – Register your account to enable private access to assignments.
-/assignments – View all your active assignments.
-/completed – View assignments you have completed.
-/pending – View assignments that are still pending.
+start - Begin interacting with the bot in private chat
+register - Register your account to enable private access to assignments
+tasks - View all your active assignments
+completed - View assignments you have completed
+pending - View assignments that are still pending
+in_progress - View all in-progress assigments
+help - Show a list of available commands and how to use the bot
