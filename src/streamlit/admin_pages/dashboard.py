@@ -39,32 +39,27 @@ def load_data():
 users, requests, tests = load_data()
 
 st.write(":gray[Requests Breakdown]")
-col1, col2, col3, col4 = st.columns(4)
 
-col1.metric("Total Requests", len(requests), border=True)
-col2.metric("Pending", len(requests[requests["request_status"] == "pending"]), border=True)
-col3.metric("In Progress", len(requests[requests["request_status"] == "in-progress"]), border=True)
-col4.metric("Completed", len(requests[requests["request_status"] == "completed"]), border=True)
+with st.container(border=False, horizontal=True, horizontal_alignment='distribute'):
+# col1, col2, col3, col4 = st.columns(4)
+
+    with st.container(border=False, horizontal=True, horizontal_alignment='distribute'):
+        st.metric("Total Requests", len(requests), border=True)
+        st.metric("Pending", len(requests[requests["request_status"] == "pending"]), border=True)
+    with st.container(border=False, horizontal=True, horizontal_alignment='distribute'):
+        st.metric("In Progress", len(requests[requests["request_status"] == "in-progress"]), border=True)
+        st.metric("Completed", len(requests[requests["request_status"] == "completed"]), border=True)
 
 # st.markdown("---")
 
 
 col5,col6 = st.columns(2, gap="medium", border=True)
 with col5:
-    # st.write(":gray[Requests Over Time]")
+    st.write(":gray[Requests Over Time]")
     requests["created_date"] = pd.to_datetime(requests["created_at"]).dt.date
-    col5_spec = {
-        "$schema": "https://vega.github.io/schema/vega-lite/v6.json",
-        "title": "Requests Over Time",
-        "mark": {"type":"line", "point":"true" },
-        "encoding": {
-            "x": {"field": "created_date", "type":"temporal"},
-            "y": {"field": "count", "type":"quantitative"}
-        }
-    }
     daily = requests.groupby("created_date").size().reset_index(name="count")
-    # st.line_chart(daily, x="created_date", y="count", x_label="", y_label="")
-    st.vega_lite_chart(daily, spec=col5_spec)
+    st.line_chart(daily, x="created_date", y="count", x_label="", y_label="")
+
 
 
 with col6:

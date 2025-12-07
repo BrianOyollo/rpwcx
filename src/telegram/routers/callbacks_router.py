@@ -76,13 +76,11 @@ async def show_task_details(callback_query:CallbackQuery, callback_data:TaskDeta
                         tests_html += f"• <i>{t}</i>\n"
                     tests_html += f"\n"
                 text = (
-                    f"<b>Task ID</b>\n"
-                    f"#{task_id}\n\n"
 
                     f"👤 <b>Patient:</b>\n"
                     f"{patient}\n\n"
 
-                    f"📍 <b>Location:</b>\n"
+                    f"📍<b>Location:</b>\n"
                     f"{location}\n\n"
 
                     f"⚠️ <b>Urgency:</b>\n"
