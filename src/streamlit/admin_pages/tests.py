@@ -102,11 +102,16 @@ def update_category(category_id: int):
         - Splits and trims comma-separated test names before updating the database.
         - Provides user warnings and error messages for missing or invalid inputs.
     """
-    category_details = conn.query(
-        "SELECT * FROM tests WHERE id=:category_id",
-        params={"category_id": category_id},
-        ttl=0,
-    ).to_dict(orient="records")
+    try:
+        category_details = conn.query(
+            "SELECT * FROM tests WHERE id=:category_id",
+            params={"category_id": category_id},
+            ttl=0,
+        ).to_dict(orient="records")
+    except Exception as e:
+        st.error("Error fetching update details. Please try again or contact admin")
+        st.stop()
+    
 
     category_id = category_details[0]["id"]
     current_category_name = category_details[0]["category_name"]
@@ -292,7 +297,7 @@ with tests_list_container:
                     vertical_alignment="top",
                     width=900,
                 ):
-                    st.caption(category['category_description'])
+                    st.caption(category['category_description'] if category['category_description'] else "No description added" )
                     st.pills(
                         category["category_description"],
                         category["available_tests"],

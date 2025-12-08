@@ -12,7 +12,6 @@ secrets.toml
 .env
 *.ipynb
 
-src/static/
 src/style.css
 *.notes
 .vscode
