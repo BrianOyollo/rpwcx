@@ -57,10 +57,24 @@ with st.container(border=False, horizontal=True, horizontal_alignment='distribut
 
 col5,col6 = st.columns(2, gap="medium", border=True)
 with col5:
-    st.write(":gray[Requests Over Time]")
+    # st.write(":gray[Requests Over Time]")
     requests["created_date"] = pd.to_datetime(requests["created_at"]).dt.date
     requests_overtime = requests.groupby("created_date").size().reset_index(name="count")
-    fig = px.line(requests_overtime, x="created_date", y="count", markers=True)
+    fig = px.line(
+        requests_overtime, 
+        x="created_date", 
+        y="count", 
+        markers=True,
+        title="Requests Over Time"
+    )
+    fig.update_yaxes(
+        range=[0, requests_overtime['count'].max()+1],
+        dtick=2,
+        nticks=10
+    )
+    fig.update_layout(
+        margin=dict(t=80),
+    )
     st.plotly_chart(fig)
 
 
