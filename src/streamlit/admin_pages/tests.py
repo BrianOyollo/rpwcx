@@ -292,7 +292,7 @@ with tests_list_container:
             ):
                 
                 with st.container(
-                    horizontal=True,
+                    horizontal=False,
                     horizontal_alignment="distribute",
                     vertical_alignment="top",
                     width=900,
