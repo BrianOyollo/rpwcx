@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import re
 
+st.set_page_config(layout="wide")
 
 conn = st.connection("postgresql", type="sql")
 

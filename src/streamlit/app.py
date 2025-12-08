@@ -19,9 +19,9 @@ conn = st.session_state["conn"]
 
 
 def login():
-    st.header("This app is private.")
-    st.subheader("Please log in.")
-    st.button("Log in with Google", on_click=st.login)
+    with st.container(border=False, horizontal=False, horizontal_alignment='center', vertical_alignment='center'):
+        st.image("src/streamlit/static/images/rpwc.png")
+        st.button("**Login**", on_click=st.login, icon=":material/login:", type='primary')
 
 
 def logout():
