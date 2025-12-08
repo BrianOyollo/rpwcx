@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import re
+import plotly.express as px
 
 st.set_page_config(layout="wide")
 
@@ -58,8 +59,9 @@ col5,col6 = st.columns(2, gap="medium", border=True)
 with col5:
     st.write(":gray[Requests Over Time]")
     requests["created_date"] = pd.to_datetime(requests["created_at"]).dt.date
-    daily = requests.groupby("created_date").size().reset_index(name="count")
-    st.line_chart(daily, x="created_date", y="count", x_label="", y_label="")
+    requests_overtime = requests.groupby("created_date").size().reset_index(name="count")
+    fig = px.line(requests_overtime, x="created_date", y="count", markers=True)
+    st.plotly_chart(fig)
 
 
 
@@ -91,3 +93,5 @@ with st.container(border=True):
     pie_data = users["user_type"].value_counts().reset_index()
     pie_data.columns = ["Type", "Count"]
     st.dataframe(pie_data, hide_index=True)
+
+
