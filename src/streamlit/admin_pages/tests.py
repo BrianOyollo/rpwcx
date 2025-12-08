@@ -298,11 +298,14 @@ with tests_list_container:
                     width=900,
                 ):
                     st.caption(category['category_description'] if category['category_description'] else "No description added" )
-                    st.pills(
-                        category["category_description"],
-                        category["available_tests"],
-                        label_visibility="collapsed",
-                    )
+                    # st.pills(
+                    #     category["category_description"],
+                    #     category["available_tests"],
+                    #     label_visibility="collapsed"
+                    # )
+                    badge_list = [f":orange-badge[{test}]" for test in category["available_tests"]]
+                    # st.write(badge_list)
+                    st.markdown(" ".join(badge_list))
 
                 # st.write(", ".join(category["available_tests"]))
                 with st.container(
