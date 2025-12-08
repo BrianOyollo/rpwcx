@@ -1,6 +1,7 @@
 import streamlit as st
 import time
 import duckdb
+from pathlib import Path
 
 # st.title("RPWC")
 
@@ -19,8 +20,9 @@ conn = st.session_state["conn"]
 
 
 def login():
+    img_path = Path(__file__).parent / "static" / "images" / "rpwc.png"
     with st.container(border=False, horizontal=False, horizontal_alignment='center', vertical_alignment='center'):
-        st.image("static/images/rpwc.png")
+        st.image(str(img_path))
         st.button("**Login**", on_click=st.login, icon=":material/login:", type='primary')
 
 
