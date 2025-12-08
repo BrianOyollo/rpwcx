@@ -12,6 +12,23 @@ st.title("My Tasks")
 
 
 def requests_list(tab:str = None):
+    """
+    Displays a list of lab requests assigned to the currently logged-in user 
+    with detailed patient, appointment, and test information.
+
+    Features:
+        - Fetches lab requests assigned to the current user (`st.user.email`).
+        - Optional filtering by request status via the `tab` parameter 
+          (e.g., 'pending', 'in-progress', 'completed').
+        - Displays patient details: name, gender, age, phone, and location.
+        - Shows collection date/time and priority (Routine or Urgent) with visual badges.
+        - Displays categorized tests in a popover with color-coded badges.
+        - Allows updating the request status directly using a `selectbox` 
+          (status changes are saved to the database immediately).
+
+    Parameters:
+        tab (str, optional): Filter requests by status. Defaults to None (all requests).
+    """
     lab_requests = conn.query(
         """
         WITH user_info AS(

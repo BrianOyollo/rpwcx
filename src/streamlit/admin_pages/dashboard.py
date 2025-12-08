@@ -108,7 +108,7 @@ with col6:
         title="Top 5 Requested Categories",
     )
     fig_category_popularity.update_layout(
-        margin=dict(l=150, r=30, t=45, b=0),
+        margin=dict(l=150, r=30, t=80, b=0),
         xaxis_title="",                       
         yaxis_title="",
         plot_bgcolor="white",
@@ -150,7 +150,7 @@ with st.container(border=True):
 
     # Improve readability and aesthetics
     fig_test_popularity.update_layout(
-        margin=dict(l=150, r=30, t=45, b=0),
+        margin=dict(l=150, r=30, t=80, b=0),
         xaxis_title="",                       
         yaxis_title="",
         plot_bgcolor="white",
