@@ -86,6 +86,29 @@ def categorize_selected_tests(conn, selected_tests):
 
 @st.cache_data(ttl=60 * 10)
 def load_tests_from_db(_conn):
+    """
+    Fetches the list of test categories and available tests from the database.
+
+    This function queries the `tests` table and returns a DataFrame containing:
+        - id
+        - category_name
+        - category_description
+        - available_tests
+
+    Caching:
+        The results are cached using Streamlit's @st.cache_data decorator.
+        Cache duration (ttl): 10 minutes.
+        This reduces unnecessary database load and improves app performance.
+
+    Parameters:
+        _conn: A database connection object that exposes a `.query()` method.
+
+    Returns:
+        pandas.DataFrame: A DataFrame containing test category metadata.
+
+    Raises:
+        Displays a Streamlit error message and stops execution if the query fails.
+    """
     try:
         tests_df = _conn.query(
             "SELECT id, category_name, category_description, available_tests FROM tests ORDER BY category_name ASC;",
@@ -100,6 +123,34 @@ def load_tests_from_db(_conn):
 
 
 def fetch_tests(conn, filter: str = None):
+    """
+    Retrieves test categories and their available tests from the database,
+    with optional filtering by category name or test name.
+
+    The function internally loads all tests using `load_tests_from_db()`.
+    If no filter is provided, all test records are returned.
+
+    Filtering behavior:
+        - Matches category_name if it contains the filter text (case-insensitive)
+        - Matches any test inside available_tests if the test name contains
+          the filter text (case-insensitive)
+        - A record is included if it matches either condition
+
+    Parameters:
+        conn: 
+            Database connection object used to query test data.
+        filter (str, optional):
+            Text used to filter categories or test names.
+            If None, no filtering is applied.
+
+    Returns:
+        list[dict]:
+            A list of dictionaries representing test records, with fields:
+            - id
+            - category_name
+            - category_description
+            - available_tests
+    """
     tests_df = load_tests_from_db(conn)
 
     if filter is None:
@@ -140,6 +191,51 @@ def prepare_tests_df(_conn):
 
 @st.fragment
 def search_tests(df):
+    """
+    Streamlit fragment that provides an interactive interface for searching,
+    selecting, and managing laboratory tests.
+
+    The component supports:
+      • Text search against test name, code, and category
+      • Displaying results as selectable pills
+      • Adding multiple tests at once
+      • Persisting selections in `st.session_state.selected_tests`
+      • Removing individual selections
+      • Clearing all selected tests
+
+    Search Behavior:
+        - Matches are case-insensitive.
+        - A row is included in results if the query appears in:
+            * df["name"]
+            * df["code"] (converted to string)
+            * df["category"]
+
+    Session State Keys:
+        search_key : int
+            Used to force rerendering of search input components after 
+            adding or removing tests.
+        selected_tests : set[str]
+            Holds the current list of user-selected tests.
+
+    UI Flow:
+        1. Displays a search input.
+        2. When typing, shows matching tests as selectable pills.
+        3. User can click "Add selected" to add them to `selected_tests`.
+        4. An expander shows currently selected tests, each with a checkbox:
+             - Unchecking removes the test immediately.
+        5. A "Clear Tests" button clears the entire selection.
+
+    Parameters:
+        df (pd.DataFrame):
+            DataFrame containing test information. Must include:
+            - "name": Test name
+            - "code": Test code
+            - "category": Test category
+
+    Returns:
+        None
+        (UI components are rendered directly into the Streamlit app.)
+    """
     if "search_key" not in st.session_state:
         st.session_state.search_key = 0
 
@@ -199,6 +295,37 @@ def search_tests(df):
 
 @st.cache_data(ttl=60)
 def fetch_doctors(_conn) -> pd.DataFrame:
+    """
+    Fetches a list of active, non-deleted doctors from the database and
+    returns them as a pandas DataFrame.
+
+    The query selects only users with:
+        - user_type = 'doctor'
+        - active = true
+        - is_deleted = false
+
+    Returned Format:
+        The DataFrame contains a single column named "doctor" where each row
+        combines the doctor's name and DKL code using:
+            "<name> - <dkl_code>"
+
+    Caching:
+        Results are cached for via @st.cache_data to reduce
+        repetitive database queries while still staying reasonably fresh.
+
+    Parameters:
+        _conn :
+            Database connection object providing a `.query()` method for
+            executing SQL queries.
+
+    Returns:
+        pd.DataFrame:
+            DataFrame with one column: "doctor".
+            Each row is a formatted doctor entry.
+
+    Raises:
+        Displays a Streamlit error message if the database query fails.
+    """
     try:
         doctors_df = _conn.query(
             """
@@ -212,11 +339,43 @@ def fetch_doctors(_conn) -> pd.DataFrame:
         return doctors_df
 
     except Exception as e:
-        st.error("Error fetching doctors")
+        st.error("Error fetching doctors. Please try again or contact the admin")
+        st.stop()
 
 
 @st.cache_data(ttl=60)
 def fetch_phlebotomists(_conn) -> pd.DataFrame:
+    """
+    Retrieves a list of active, non-deleted phlebotomists from the database
+    and returns them as a pandas DataFrame.
+
+    The query filters users by:
+        - user_type = 'phlebotomist'
+        - active = true
+        - is_deleted = false
+
+    Returned Format:
+        The DataFrame contains a single column named "phlebotomist", where each
+        row is a combined string:
+            "<name> - <dkl_code>"
+
+    Caching:
+        Results are cached for 60 seconds using @st.cache_data to reduce load
+        on the database while keeping the list reasonably fresh.
+
+    Parameters:
+        _conn :
+            Database connection object with a `.query()` method used to
+            execute SQL statements.
+
+    Returns:
+        pd.DataFrame:
+            A DataFrame with one column: "phlebotomist".
+
+    Raises:
+        On query failure, shows a Streamlit error message and stops execution
+        to prevent downstream errors.
+    """
     try:
         phlebotomists_df = _conn.query(
             """
@@ -230,4 +389,5 @@ def fetch_phlebotomists(_conn) -> pd.DataFrame:
         return phlebotomists_df
 
     except Exception as e:
-        st.error("Error fetching phlebotomists")
+        st.error("Error fetching phlebotomists. Please try again or contact the admin")
+        st.stop()

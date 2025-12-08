@@ -35,6 +35,15 @@ if dash_period == 'Yearly':
 st.write(" ")
 
 def load_data():
+    """
+    Fetches the main datasets from the database for the application.
+
+    Returns:
+        tuple:
+            - users (DataFrame): All non-deleted users from the `users` table.
+            - requests (DataFrame): All lab requests from the `requests` table.
+            - tests (DataFrame): All test categories and available tests from the `tests` table.
+    """
     users = conn.query("SELECT * FROM users WHERE is_deleted = false", ttl=0)
     requests = conn.query("SELECT * FROM requests", ttl=0)
     tests = conn.query("SELECT * FROM tests", ttl=0)
@@ -77,7 +86,8 @@ with col5:
     fig_requests_overtime.update_layout(
         margin=dict(t=80),
         xaxis_title="",
-        yaxis_title=""
+        yaxis_title="",
+        height=300
     )
     st.plotly_chart(fig_requests_overtime)
 
@@ -91,17 +101,18 @@ with col6:
     category_popularity = requests_exploded.groupby('category').size().reset_index(name="count").sort_values("count", ascending=True)
     
     fig_category_popularity = px.bar(
-        category_popularity, 
+        category_popularity.head(5).sort_values("count", ascending=True), 
         x='count', 
         y='category', 
         orientation='h',
-        title="Most Requested Categories",
+        title="Top 5 Requested Categories",
     )
     fig_category_popularity.update_layout(
-        margin=dict(l=150, r=30, t=70, b=30),
+        margin=dict(l=150, r=30, t=45, b=0),
         xaxis_title="",                       
         yaxis_title="",
         plot_bgcolor="white",
+        height=300
     )
 
     fig_category_popularity.update_xaxes(showgrid=False)
@@ -123,27 +134,27 @@ with st.container(border=True):
         tests_exploded.groupby("selected_tests")
         .size()
         .reset_index(name="Count")
-        .sort_values("Count", ascending=True)
+        .sort_values("Count", ascending=False)
     )
 
     test_popularity.columns = ['Test', "Count"]
     test_popularity['Test'] = test_popularity['Test'].str.replace(r"\s*\[.*?\]$", "", regex=True)
 
-
     fig_test_popularity = px.bar(
-        test_popularity,
+        test_popularity.head(10).sort_values("Count", ascending=True),
         x="Count",
         y="Test",
         orientation="h",
-        title="Most Requested Tests",
+        title="Top 10 Requested Tests",
     )
 
     # Improve readability and aesthetics
     fig_test_popularity.update_layout(
-        margin=dict(l=150, r=30, t=70, b=30),
+        margin=dict(l=150, r=30, t=45, b=0),
         xaxis_title="",                       
         yaxis_title="",
         plot_bgcolor="white",
+        height=350
     )
 
     # Remove gridlines to clean up look

@@ -28,6 +28,22 @@ conn = st.session_state["conn"]
 
 
 def create_request():
+    """
+    Creates a new lab request from the current session state form.
+
+    Workflow:
+        - Collects patient, appointment, and test details from `st.session_state`.
+        - Ignores new doctor details if an existing doctor is selected.
+        - Prepares and sanitizes data for database insertion.
+        - Inserts the request into the `requests` table.
+        - Clears session state and redirects to the lab requests page on success.
+        - Displays an error message if insertion fails.
+
+    Notes:
+        - Uses session state `lrf_form` and `selected_tests` for data.
+        - All names are sanitized by replacing spaces with underscores.
+        - The function performs database modification and page navigation.
+    """
     data = st.session_state.lrf_form
     data["tests"] = st.session_state.selected_tests
 

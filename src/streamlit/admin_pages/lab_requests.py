@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from sqlalchemy import text, exc
 from datetime import datetime
+import time
 
 from utils import (
     fetch_phlebotomists,
@@ -27,35 +28,76 @@ if "edited_request" not in st.session_state:
 
 
 def fetch_requests():
-    requests = conn.query(
-        """
-        WITH doctors as (
-            select dkl_code, name from users where user_type='doctor'
-        ),
-        phlebotomists as (
-            select dkl_code, name from users where user_type='phlebotomist'
-        )
+    """
+    Fetches all patient requests along with doctor and phlebotomist details,
+    returning the result as a pandas DataFrame.
 
-        SELECT 
-            id,
-            CONCAT(r.first_name,' ',r.middle_name, ' ',r.surname)  AS patient, 
-            r.dob, r.gender, r.phone, r.email, r.location,
-            r.selected_tests, r.collection_date, r.collection_time,priority,
-            d.name as doctor,
-            p.name as phlebotomist,
-            r.request_status, r.created_at, r.updated_at          
-        FROM requests r
-        JOIN doctors d on d.dkl_code = r.doctor_dkl_code
-        JOIN phlebotomists p on p.dkl_code = r.assign_to
-        ORDER BY created_at DESC;	
-        """,
-        ttl=0,
-    )
-    return requests
+    This function performs a SQL query that:
+        - Joins the `requests` table with:
+            * `doctors` (users with user_type='doctor')
+            * `phlebotomists` (users with user_type='phlebotomist')
+        - Combines patient name fields into a single "patient" column.
+        - Includes key request fields such as demographics, tests,
+          collection schedule, assigned staff, status, and timestamps.
+        - Orders the results by most recently created requests.
+    Returns:
+        pd.DataFrame:
+            A DataFrame with one column: "phlebotomist".
+
+    Raises:
+        On query failure, shows a Streamlit error message and stops execution
+        to prevent downstream errors.
+    """
+    try:
+        requests = conn.query(
+            """
+            WITH doctors as (
+                select dkl_code, name from users where user_type='doctor'
+            ),
+            phlebotomists as (
+                select dkl_code, name from users where user_type='phlebotomist'
+            )
+
+            SELECT 
+                id,
+                CONCAT(r.first_name,' ',r.middle_name, ' ',r.surname)  AS patient, 
+                r.dob, r.gender, r.phone, r.email, r.location,
+                r.selected_tests, r.collection_date, r.collection_time,priority,
+                d.name as doctor,
+                p.name as phlebotomist,
+                r.request_status, r.created_at, r.updated_at          
+            FROM requests r
+            JOIN doctors d on d.dkl_code = r.doctor_dkl_code
+            JOIN phlebotomists p on p.dkl_code = r.assign_to
+            ORDER BY created_at DESC;	
+            """,
+            ttl=0,
+        )
+        return requests
+    except Exception as e:
+        st.error("Error fetching lab requests. Please try again or contact the admin")
+        st.stop()
 
 
 @st.dialog(":green[Request Details]")
 def request_details(request):
+    """
+    Displays a modal dialog showing full details for a single request.
+
+    The dialog presents:
+        - Patient information (name, gender, DOB, contacts, location)
+        - Assigned doctor and phlebotomist
+        - Request metadata (created/updated timestamps, priority, collection schedule)
+        - Selected tests rendered as badges
+
+    Args:
+        request (dict): A dictionary representing a single request record
+        returned from fetch_requests(), containing all required fields.
+
+    Note:
+        This function only renders UI elements; it does not modify state
+        or return any value.
+    """
     with st.container(
         border=False, horizontal=False, horizontal_alignment="center", height=450
     ):
@@ -87,12 +129,24 @@ def request_details(request):
         st.markdown(f":orange[**Tests**]: {' '.join(tests_badges)}")
 
 
-def edit_request(request):
-    pass
-
-
 @st.dialog("Delete Lab Request")
 def delete_lab_request(request_id):
+    """
+    Displays a confirmation dialog to delete a lab request by ID.
+
+    Workflow:
+        - Shows a warning that deletion is irreversible.
+        - Provides a "Confirm" button to execute deletion.
+        - On confirmation, deletes the request from the database.
+        - Handles rollback on errors and displays a toast notification.
+        - Reruns the app after deletion or error.
+
+    Args:
+        request_id (int): The ID of the lab request to delete.
+
+    Note:
+        This function performs database modification and updates the UI.
+    """
     st.warning(
         "Are you sure you want to delete this request? \n\n :red[**This action can't be done!**]"
     )
@@ -111,6 +165,7 @@ def delete_lab_request(request_id):
                     session.rollback()
                     print(e)
                     st.toast(":red[Error deleted lab request. Please try again]")
+                    time.sleep(5)
                     st.rerun()
 
 
@@ -124,6 +179,25 @@ if st.session_state.lr_mode == "edit" and st.session_state.get("request_to_edit"
 
         @st.fragment
         def edit_request():
+            """
+            Displays a multi-tab form to edit an existing lab request.
+
+            Tabs:
+                1. Patient Details: Edit patient name, DOB, gender, location, phone, email.
+                2. Appointment Details: Edit status, assigned doctor, phlebotomist, priority, collection date/time.
+                3. Test Details: Search and select tests for the request.
+
+            Features:
+                - Pre-fills fields with current request values.
+                - Validates required fields and test selection before saving.
+                - Updates the request in the database on "Save Changes".
+                - Cancels edit and resets session state on "Cancel Edit".
+
+            Notes:
+                - Uses Streamlit session state to manage temporary selections.
+                - Performs database updates with rollback on errors.
+                - UI height, layout, and alignment are customized for usability.
+            """
             tabs = st.tabs(["Patient Details", "Appointment Details", "Test Details"])
 
             # st.write(st.session_state.edited_request)

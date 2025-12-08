@@ -17,6 +17,24 @@ st.title("Users")
 
 @st.cache_data(ttl=60 * 2)
 def fetch_all_users():
+    """
+    Fetches all active, non-deleted users from the database.
+
+    Returns:
+        pd.DataFrame: A DataFrame containing user details with columns:
+            - dkl_code: Unique identifier for the user
+            - name: Full name of the user
+            - email: User's email address
+            - contact: User's phone/contact number
+            - user_type: Role of the user (e.g., doctor, phlebotomist)
+            - active: Boolean indicating if the user is active
+            - created_at: Timestamp of when the user was created
+
+    Notes:
+        - The results are sorted by name in descending order.
+        - Data is cached for 2 minutes to reduce repeated database calls.
+        - If fetching fails, the function stops execution and shows an error message.
+    """
     try:
         users = conn.query(
             "SELECT dkl_code, name, email, contact, user_type,active, created_at FROM users WHERE is_deleted=false;",
@@ -112,6 +130,21 @@ with tab1:
 
     @st.dialog("New User")
     def add_new_user():
+        """
+        Displays a dialog form to add a new user to the system.
+
+        Functionality:
+            - Collects user details: DKL Code, Full Name, Email, Phone, and Role.
+            - Validates that all fields are filled before submission.
+            - Inserts the new user into the `users` table in the database.
+            - Handles integrity errors for duplicate DKL code or email.
+            - Clears the cached list of users and refreshes the page upon successful addition.
+        
+        Notes:
+            - Roles are limited to "Doctor", "Phlebotomist", or "Admin".
+            - All DKL codes are stored in lowercase.
+            - On error, displays an appropriate message and stops further execution.
+        """
         with st.form("add-user"):
             dkl_code = st.text_input("DKL Code", key="dkl_code")
             full_name = st.text_input("Full Names", key="full_name")
@@ -183,8 +216,26 @@ with tab2:
         st.session_state.update_message = ""
 
     def update_users(users_df, modified_df):
-        """Only updates name, email, phone and active status
-        dkl code is used to update the fields in the db
+        """
+        Updates users in the database based on differences between the original and modified dataframes.
+        Only updates: name, email, contact, user_type, and active status.
+        The dkl_code is used as the unique identifier for matching records.
+
+        Args:
+            users_df (pd.DataFrame): Original users dataframe.
+            modified_df (pd.DataFrame): Modified users dataframe with edits to apply.
+
+        Notes:
+            - Rows missing in modified_df but present in users_df are marked as deleted (is_deleted=True, active=False).
+            - Only fields that differ between original and modified dataframes are updated.
+
+        By the way:
+            Streamlit provides an easy way to detect added, deleted, or modified rows using
+            `st.data_editor` with a session key. This can sometimes save you from
+            doing the full comparison yourself:
+                st.data_editor(df, key="my_key", num_rows="dynamic")
+                st.session_state["my_key"]  # contains the edited data
+            I didn’t know this when I wrote this function 😅
         """
 
         duck_conn.register("original", users_df)
@@ -197,7 +248,7 @@ with tab2:
         """
         ).fetchall()
 
-        print("----------- ORINAL DF IN DUCKDB-----------")
+        print("----------- ORIGINAL DF IN DUCKDB-----------")
         duck_conn.sql("select * from original")
 
         print("----------- modified DF IN DUCKDB-----------")
@@ -273,6 +324,30 @@ with tab2:
 
     @st.fragment
     def users_editor():
+        """
+        Provides an interactive interface to view, search, edit, and update users in the system.
+
+        Features:
+            - Displays all active users in a data editor table with editable columns: 
+            name, email, contact, user_type, and active status.
+            - Search functionality for DKL code, name, or email.
+            - Dynamic addition of new rows (note: new rows added here are not saved automatically).
+            - Tracks modifications and allows undoing changes before saving.
+            - Validates that required fields are not empty before saving.
+            - Saves changes to the database using `update_users`.
+
+        Columns Configuration:
+            - dkl_code: non-editable, pinned
+            - name, email, contact, user_type, active: editable
+            - created_at: non-editable, datetime display
+
+        By the way:
+            Streamlit’s `st.data_editor` automatically stores changes in session state when a `key` is set.
+            This makes it easy to access only the modified rows rather than the full dataframe:
+                st.data_editor(df, key="my_key", num_rows="dynamic")
+                st.session_state["my_key"]  # contains the edited data
+            Handy for detecting new, deleted, or changed rows without manual comparison.
+        """
         if st.session_state.update_message:
             st.toast(st.session_state.update_message)
             st.session_state.update_message = ""
@@ -379,181 +454,3 @@ with tab2:
                     update_users(users_df, modified_df)
 
     users_editor()
-
-
-# def prepare_users_updates(original_df, modified_df):
-
-#     # check for duplicate emails or dkl_codes
-#     modified_df_emails = modified_df['email'].to_list()
-#     duplicate_emails = [ e for e in modified_df_emails if modified_df_emails.count(e)>1]
-
-#     modified_df_dkl_codes = modified_df['dkl_code'].to_list()
-#     duplicate_dkl_codes = [ c for c in modified_df_dkl_codes if modified_df_dkl_codes.count(c)>1 ]
-
-#     if duplicate_emails:
-#         message = f":red[Duplicate emails detected in the update]"
-#         st.session_state['update_users_msg'] = message
-#         st.rerun()
-
-#     if duplicate_dkl_codes:
-#         message = f":red[Duplicate DKL codes detected in the update]. \n {', '.join(set(duplicate_dkl_codes))}"
-#         st.session_state['update_users_msg'] = message
-#         st.rerun()
-
-
-#     duck_conn.register("original_df", original_df)
-#     duck_conn.register("modified_df", modified_df)
-
-#     # new_users
-#     new_users = duck_conn.sql("""
-#         SELECT dkl_code, name, email, contact, user_type
-#         FROM modified_df
-#         WHERE email NOT IN (SELECT email FROM original_df)
-#     """).fetchall()
-
-#     # # modified users
-#     modified_users = duck_conn.sql("""
-#         SELECT m.*,
-#         FROM modified_df m
-#         JOIN original_df o ON o.email=m.email
-#         WHERE m.name != o.name OR m.contact != o.contact OR m.user_type != o.user_type OR m.active != o.active
-#         """).fetchall()
-
-#     # # deleted users
-#     deleted_users = duck_conn.sql("""
-#         SELECT email,
-#         FROM  original_df
-#         WHERE email NOT IN (SELECT email FROM modified_df)
-#     """).fetchall()
-
-#     return new_users, modified_users,deleted_users
-
-
-# @st.dialog("Review Changes")
-# def save_user_updates(new_users, modified_users, deleted_users):
-#     warning_texts = []
-#     if new_users:
-#         warning_texts.append(f"Add {len(new_users)} new user(s)")
-#     if modified_users:
-#         warning_texts.append(f"Modify {len(modified_users)} user(s)")
-#     if deleted_users:
-#         warning_texts.append(f"Delete {len(deleted_users)} user(s)")
-
-#     st.warning(
-#         "### Are you sure you want to make the following changes: \n"
-#         + "\n".join(f"- {text}" for text in warning_texts)
-#     )
-
-#     with st.container(
-#         border=False,
-#         horizontal=True,
-#         horizontal_alignment="center",
-#         vertical_alignment="center",
-#     ):
-#         cancel_btn = st.button("Cancel", type="secondary")
-#         save_btn = st.button("Confirm", type="secondary")
-
-#     if cancel_btn:
-#         st.rerun()
-
-#     if save_btn:
-#         with conn.session as session:
-#             # --- Add users ---
-#             if new_users:
-#                 new_users_query = text(
-#                     """
-#                     INSERT INTO users(dkl_code, name, email, contact, user_type)
-#                     VALUES(:dkl_code, :name, :email, :contact, :user_type);
-#                     """
-#                 )
-#                 new_users_data = [
-#                     {
-#                         "dkl_code": new_user[0],
-#                         "name": new_user[1],
-#                         "email": new_user[2],
-#                         "contact": new_user[3],
-#                         "user_type": new_user[4],
-#                     }
-#                     for new_user in new_users
-#                 ]
-#                 print(new_users_data)
-#                 session.execute(new_users_query, new_users_data)
-
-#             # --- Modify users ---
-#             if modified_users:
-#                 modify_users_query = text(
-#                     """
-#                     UPDATE users
-#                     SET name=:name, contact=:contact, user_type=:user_type, active=:active
-#                     WHERE email=:email AND dkl_code=:dkl_code
-#                     """
-#                 )
-#                 modified_users_data = [
-#                     {   "dkl_code": row[0],
-#                         "name": row[1],
-#                         "email": row[2],
-#                         "contact": row[3],
-#                         "user_type": row[4],
-#                         "active": row[4],
-#                     }
-#                     for row in modified_users
-#                 ]
-#                 session.execute(modify_users_query, modified_users_data)
-
-#             # --- Delete users ---
-#             if deleted_users:
-#                 # Soft-delete users instead of removing them from the database.
-#                 # In this system, historical audit trails matter — doctors or staff
-#                 # might leave, but their past actions (requests, approvals, etc.)
-#                 # must remain traceable. Therefore, we mark them inactive and is_deleted instead of deleting.
-#                 # delete_query = text("DELETE FROM users WHERE email=:email;")
-#                 delete_query = text("UPDATE users SET is_deleted=true, active=false WHERE email=:email")
-#                 data = [{"email": row[0]} for row in deleted_users]
-#                 session.execute(delete_query, data)
-
-#             session.commit()
-#             st.rerun()
-
-
-# st.subheader(":orange[Users]")
-# users = fetch_all_users()
-
-# modified_df = st.data_editor(
-#     users,
-#     num_rows="dynamic",
-#     hide_index=True,
-#     column_order=("dkl_code","name", "email", "contact", "user_type", "active"),
-#     column_config={
-#         "dkl_code": st.column_config.TextColumn("DKL Code", pinned=True, width='small'),
-#         "name": st.column_config.TextColumn("Name", pinned=True),
-#         "email": st.column_config.TextColumn("Email"),
-#         "contact": st.column_config.TextColumn("Phone No."),
-#         "user_type": st.column_config.SelectboxColumn(
-#             "Role", options=["admin", "phlebotomist", 'doctor']
-#         ),
-#         "active": st.column_config.CheckboxColumn("Active"),
-#         "created_at": st.column_config.DatetimeColumn(
-#             "Created", disabled=True, format="calendar"
-#         ),
-#     },
-# )
-
-
-# buttons_container = st.container(
-#     border=False,
-#     horizontal=True,
-#     horizontal_alignment="center",
-#     vertical_alignment="center",
-# )
-
-# with buttons_container:
-#     save_changes_btn = st.button("Update Users")
-#     if save_changes_btn:
-
-#         new_users, modified_users, deleted_users = prepare_users_updates(
-#             users, modified_df
-#         )
-#         if not new_users and not modified_users and not deleted_users:
-#             st.rerun()
-#         else:
-#             save_user_updates(new_users, modified_users, deleted_users)

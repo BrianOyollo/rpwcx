@@ -25,6 +25,21 @@ with header_container:
 
 @st.dialog("New Test Category")
 def new_test_category():
+    """
+    Displays a form to create a new test category.
+
+    Workflow:
+        - Collects category name, description, and a comma-separated list of tests.
+        - Validates that required fields (name and tests) are provided.
+        - Inserts the new category into the `tests` table.
+        - Clears cached test data and reruns the app on success.
+        - Handles unique constraint violations and general database errors with messages.
+
+    Notes:
+        - Uses a Streamlit form for input collection.
+        - Splits and trims comma-separated test names before storing.
+        - Provides user feedback via warnings and error messages.
+    """
     with st.form("new_category"):
         category_name = st.text_input("Category")
         category_description = st.text_area("Description")
@@ -72,6 +87,21 @@ def new_test_category():
 
 @st.dialog("Edit/Update Category")
 def update_category(category_id: int):
+    """
+    Displays a form to edit and update an existing test category.
+
+    Workflow:
+        - Fetches current category details (name, description, available tests) from the database.
+        - Populates a Streamlit form with current values for editing.
+        - Validates that the category name and tests are provided.
+        - Updates the category in the `tests` table with new values.
+        - Clears cached test data and reruns the app on success.
+        - Handles unique constraint violations (duplicate category name) and general database errors with feedback.
+    
+    Notes:
+        - Splits and trims comma-separated test names before updating the database.
+        - Provides user warnings and error messages for missing or invalid inputs.
+    """
     category_details = conn.query(
         "SELECT * FROM tests WHERE id=:category_id",
         params={"category_id": category_id},
@@ -91,12 +121,7 @@ def update_category(category_id: int):
         available_tests = st.text_area(
             "Tests", value=",\n".join(current_available_tests), height=250
         )
-        # available_tests = st.multiselect(
-        #     "Tests",
-        #     default=current_available_tests,
-        #     options=current_available_tests,
-        #     accept_new_options=True,
-        # )
+
         with st.container(horizontal=True, horizontal_alignment="center"):
             update_category = st.form_submit_button("Update")
 
@@ -145,6 +170,19 @@ def update_category(category_id: int):
 
 @st.dialog("Delete Category")
 def delete_category(category_id: int):
+    """
+    Displays a confirmation dialog to delete a test category.
+
+    Workflow:
+        - Shows a warning that the category and its tests will be permanently deleted.
+        - Provides a checkbox to skip future warnings (stored in session state).
+        - Executes deletion from the `tests` table when user confirms.
+        - Clears cached test data and reruns the app on success.
+        - Handles database errors gracefully with a user-friendly message.
+    
+    Notes:
+        - This action is irreversible; the deleted category and tests cannot be recovered.
+    """
     delete_query = text("DELETE FROM tests WHERE id=:id")
 
     st.warning(
@@ -247,16 +285,18 @@ with tests_list_container:
                 horizontal_alignment="distribute",
                 vertical_alignment="center",
             ):
+                
                 with st.container(
                     horizontal=True,
                     horizontal_alignment="distribute",
                     vertical_alignment="top",
                     width=900,
                 ):
+                    st.caption(category['category_description'])
                     st.pills(
                         category["category_description"],
                         category["available_tests"],
-                        label_visibility="hidden",
+                        label_visibility="collapsed",
                     )
 
                 # st.write(", ".join(category["available_tests"]))
