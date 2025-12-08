@@ -3,6 +3,8 @@ import pandas as pd
 import re
 import plotly.express as px
 
+from utils import fetch_categories_and_tests
+
 st.set_page_config(layout="wide")
 
 conn = st.connection("postgresql", type="sql")
@@ -40,7 +42,7 @@ def load_data():
 
 users, requests, tests = load_data()
 
-st.write(":gray[Requests Breakdown]")
+st.write("**Requests Breakdown**")
 
 with st.container(border=False, horizontal=True, horizontal_alignment='distribute'):
 # col1, col2, col3, col4 = st.columns(4)
@@ -82,7 +84,38 @@ with col5:
 
 
 with col6:
-    pass
+    requests_exploded = requests.explode("selected_tests")
+    test_category_map = fetch_categories_and_tests(conn)
+    requests_exploded['category'] = requests_exploded['selected_tests'].apply(
+        lambda x: test_category_map.get(x, "Uncategorized")
+    )
+    category_popularity = requests_exploded.groupby('category').size().reset_index(name="count").sort_values("count", ascending=True)
+    
+    fig_category_popularity = px.bar(
+        category_popularity, 
+        x='count', 
+        y='category', 
+        orientation='h',
+        title="Most Requested Categories",
+    )
+    fig_category_popularity.update_layout(
+        margin=dict(l=150, r=30, t=70, b=30),
+        xaxis_title="",                       
+        yaxis_title="",
+        plot_bgcolor="white",
+    )
+
+    fig_category_popularity.update_xaxes(showgrid=False)
+    fig_category_popularity.update_yaxes(showgrid=False)
+
+    # Add data labels on bars
+    fig_category_popularity.update_traces(
+        texttemplate='%{x}',
+        textposition='outside'
+    )
+
+    st.plotly_chart(fig_category_popularity)
+
 
 with st.container(border=True):
     tests_exploded = requests.explode("selected_tests")
@@ -96,7 +129,7 @@ with st.container(border=True):
 
     test_popularity.columns = ['Test', "Count"]
     test_popularity['Test'] = test_popularity['Test'].str.replace(r"\s*\[.*?\]$", "", regex=True)
-    # test_popularity['Test'] = test_popularity['Test'].str.replace(r"\s*\[.*?\]$", "", regex=True)
+
 
     fig_test_popularity = px.bar(
         test_popularity,
@@ -108,8 +141,8 @@ with st.container(border=True):
 
     # Improve readability and aesthetics
     fig_test_popularity.update_layout(
-        margin=dict(l=150, r=30, t=70, b=30),  # extra room for long test names
-        xaxis_title="",                        # remove default axis label
+        margin=dict(l=150, r=30, t=70, b=30),
+        xaxis_title="",                       
         yaxis_title="",
         plot_bgcolor="white",
     )
