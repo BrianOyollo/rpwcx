@@ -12,7 +12,7 @@ conn = st.connection("postgresql", type="sql")
 st.title("Dashboard")
 
 
-#  dashboard filters
+# dashboard filters
 dash_period = st.sidebar.selectbox(
     "Dashboard Period", 
     options = ['This week', "This Month", "Yearly", 'All Time'], 
@@ -80,7 +80,6 @@ with col5:
         yaxis_title=""
     )
     st.plotly_chart(fig_requests_overtime)
-
 
 
 with col6:

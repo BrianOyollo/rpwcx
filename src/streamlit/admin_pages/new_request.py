@@ -6,7 +6,12 @@ import pandas as pd
 from sqlalchemy import text, exc
 import secrets
 
-from admin_pages.tests import fetch_tests
+from utils import (
+    fetch_phlebotomists,
+    fetch_doctors,
+    search_tests,
+    prepare_tests_df,
+)
 
 st.set_page_config(page_title="RPWC | Lab Request Form", layout="wide")
 
@@ -20,127 +25,6 @@ if "selected_tests" not in st.session_state:
 st.header("Requests", divider="orange")
 
 conn = st.session_state["conn"]
-
-
-@st.cache_data(ttl=60 * 2)
-def prepare_tests_df():
-    """
-    Fetches tests from DB and flattens into a DataFrame with:
-    - name
-    - code
-    - category
-    """
-    raw_tests = fetch_tests()  # from your DB
-
-    rows = []
-
-    for category in raw_tests:
-        cat_name = category["category_name"]
-        for test in category["available_tests"]:
-            # extract test code inside brackets e.g. [5050]
-            match = re.search(r"\[(\d+)\]", test)
-            code = match.group(1) if match else ""
-
-            rows.append({"name": test, "code": code, "category": cat_name})
-
-    df = pd.DataFrame(rows)
-    return df
-
-
-@st.fragment
-def search_tests(df):
-    if "search_key" not in st.session_state:
-        st.session_state.search_key = 0
-
-    q = st.text_input(
-        "Search",
-        placeholder="search",
-        label_visibility="collapsed",
-        key=f"search{st.session_state.search_key}",
-    )
-
-    with st.container(border=False, horizontal=False, horizontal_alignment="center"):
-        if q:
-            results = df[
-                df["name"].str.lower().str.contains(q.lower())
-                | df["code"].astype(str).str.contains(q.lower())
-                | df["category"].str.lower().str.contains(q.lower())
-            ]
-
-            options = results["name"].to_list()
-            with st.container(
-                border=False, horizontal=True, horizontal_alignment="left"
-            ):
-                selected = st.pills(
-                    "results",
-                    options=options,
-                    selection_mode="multi",
-                    label_visibility="collapsed",
-                    key=f"pills{st.session_state.search_key}",
-                )
-
-            if selected:
-                add_selected_btn = st.button("Add selected")
-                if add_selected_btn:
-                    st.session_state.selected_tests.update(selected)
-                    st.session_state.search_key += 1
-                    st.rerun(scope="fragment")
-
-    with st.expander("Selected Tests", expanded=False):
-        with st.container(
-            border=True,
-            horizontal=True,
-            horizontal_alignment="left",
-            vertical_alignment="top",
-        ):
-            for idx, test in enumerate(st.session_state.selected_tests):
-                checkbox = st.checkbox(test, key=f"{test}{idx}", value=True)
-                if not checkbox:
-                    st.session_state.selected_tests.remove(test)
-                    st.rerun(scope="fragment")
-
-        with st.container(horizontal=True, horizontal_alignment="center"):
-            if st.session_state.selected_tests:
-                clear = st.button("Clear Tests")
-                if clear:
-                    st.session_state.selected_tests = set()
-                    st.rerun(scope="fragment")
-
-
-@st.cache_data(ttl=60)
-def fetch_doctors() -> pd.DataFrame:
-    try:
-        doctors_df = conn.query(
-            """
-            SELECT CONCAT_WS(' - ', name, dkl_code) AS doctor
-            FROM users
-            WHERE user_type='doctor' AND active=true AND is_deleted=false
-            ORDER BY name ASC;
-            """,
-            ttl=0,
-        )
-        return doctors_df
-
-    except Exception as e:
-        st.error("Error fetching doctors")
-
-
-@st.cache_data(ttl=60)
-def fetch_phlebotomists() -> pd.DataFrame:
-    try:
-        phlebotomists_df = conn.query(
-            """
-            SELECT CONCAT_WS(' - ', name, dkl_code) AS  phlebotomist
-            FROM users
-            WHERE user_type='phlebotomist' AND active=true AND is_deleted=false
-            ORDER BY name ASC;
-            """,
-            ttl=0,
-        )
-        return phlebotomists_df
-
-    except Exception as e:
-        st.error("Error fetching phlebotomists")
 
 
 def create_request():
@@ -196,7 +80,7 @@ def create_request():
             )
 
 
-available_tests_df = prepare_tests_df()
+available_tests_df = prepare_tests_df(conn)
 
 lab_req_formm_ctn = st.container(
     border=True,
@@ -308,14 +192,14 @@ with lab_req_formm_ctn:
                 with st.container(horizontal=True, horizontal_alignment="distribute"):
                     doctor = st.selectbox(
                         "Doctor*",
-                        options=fetch_doctors(),
+                        options=fetch_doctors(conn),
                         index=None,
                         placeholder="Select an existing doctor",
                     )
 
                 st.divider()
                 assign_to = st.selectbox(
-                    "Assign to:*", options=fetch_phlebotomists(), index=None
+                    "Assign to:*", options=fetch_phlebotomists(conn), index=None
                 )
                 st.divider()
 
@@ -377,7 +261,7 @@ with lab_req_formm_ctn:
                             st.toast(":green[Appointment details saved]")
 
         with test_details:
-            tests_df = prepare_tests_df()
+            tests_df = prepare_tests_df(conn)
             search_tests(tests_df)
 
             with st.container(

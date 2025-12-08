@@ -1,6 +1,8 @@
 import streamlit as st
 from sqlalchemy import text, exc
 
+from utils import load_tests_from_db, fetch_tests
+
 st.set_page_config(page_title="RPWC | Tests", layout="wide")
 
 
@@ -170,7 +172,6 @@ def delete_category(category_id: int):
                 )
                 session.rollback()
 
-
 actions_container = st.container(
     key="actions_ctn",
     border=False,
@@ -194,34 +195,34 @@ with actions_container:
 # ------------------------ TESTS -------------------------------------------------------------------
 
 
-@st.cache_data(ttl=60 * 10)
-def load_tests_from_db():
-    try:
-        tests_df = conn.query(
-            "SELECT id, category_name, category_description, available_tests FROM tests ORDER BY category_name ASC;",
-            ttl=0,
-        )
-        return tests_df
-    except Exception as e:
-        st.error(
-            "Error fetching tests from the db. Contact system admin if issue persists"
-        )
-        st.stop()
+# @st.cache_data(ttl=60 * 10)
+# def load_tests_from_db(_conn):
+#     try:
+#         tests_df = conn.query(
+#             "SELECT id, category_name, category_description, available_tests FROM tests ORDER BY category_name ASC;",
+#             ttl=0,
+#         )
+#         return tests_df
+#     except Exception as e:
+#         st.error(
+#             "Error fetching tests from the db. Contact system admin if issue persists"
+#         )
+#         st.stop()
 
 
-def fetch_tests(filter: str = None):
-    tests_df = load_tests_from_db()
+# def fetch_tests(conn, filter: str = None):
+#     tests_df = load_tests_from_db(conn)
 
-    if filter is None:
-        return tests_df.to_dict(orient="records")
+#     if filter is None:
+#         return tests_df.to_dict(orient="records")
 
-    filtered_tests = tests_df[
-        tests_df["category_name"].str.contains(str(filter), case=False, na=False)
-        | tests_df["available_tests"].apply(
-            lambda tests: any(filter.lower() in test.lower() for test in tests)
-        )
-    ]
-    return filtered_tests.to_dict(orient="records")
+#     filtered_tests = tests_df[
+#         tests_df["category_name"].str.contains(str(filter), case=False, na=False)
+#         | tests_df["available_tests"].apply(
+#             lambda tests: any(filter.lower() in test.lower() for test in tests)
+#         )
+#     ]
+#     return filtered_tests.to_dict(orient="records")
 
 
 tests_list_container = st.container(
@@ -233,8 +234,7 @@ tests_list_container = st.container(
     height=500,
 )
 
-
-categories = fetch_tests(test_search)
+categories = fetch_tests(conn, test_search)
 
 
 with tests_list_container:

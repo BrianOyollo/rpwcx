@@ -3,7 +3,7 @@ import pandas as pd
 from sqlalchemy import text, exc
 from datetime import datetime
 
-from admin_pages.new_request import (
+from utils import (
     fetch_phlebotomists,
     fetch_doctors,
     search_tests,
@@ -216,7 +216,7 @@ if st.session_state.lr_mode == "edit" and st.session_state.get("request_to_edit"
                         format_func = lambda x: x.title()
                     )
 
-                    doctor_options = fetch_doctors()["doctor"].to_list()
+                    doctor_options = fetch_doctors(conn)["doctor"].to_list()
                     current_doctor = request_to_edit["doctor"]
                     doctor_match = None
 
@@ -233,7 +233,7 @@ if st.session_state.lr_mode == "edit" and st.session_state.get("request_to_edit"
                     )
 
                     # st.divider()
-                    phlebotomist_options = fetch_phlebotomists()[
+                    phlebotomist_options = fetch_phlebotomists(conn)[
                         "phlebotomist"
                     ].to_list()
                     current_phlebotomist = request_to_edit["phlebotomist"]
@@ -245,7 +245,7 @@ if st.session_state.lr_mode == "edit" and st.session_state.get("request_to_edit"
 
                     phlebotomist = st.selectbox(
                         "Phlebotomist:*",
-                        options=fetch_phlebotomists(),
+                        options=fetch_phlebotomists(conn),
                         index=phlebotomist_options.index(phlebotomist_match),
                         key="edit_phlebotomist",
                     )
@@ -286,7 +286,7 @@ if st.session_state.lr_mode == "edit" and st.session_state.get("request_to_edit"
                     vertical_alignment="top",
                     height=400,
                 ):
-                    df = prepare_tests_df()
+                    df = prepare_tests_df(conn)
                     search_tests(df)
 
             with st.container(

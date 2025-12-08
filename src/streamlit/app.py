@@ -44,7 +44,7 @@ new_lab_request = st.Page(
 lab_requests = st.Page(
     "admin_pages/lab_requests.py", title="Lab Requests", icon=":material/lab_profile:"
 )
-tests = st.Page("admin_pages/tests.py", title="Tests", icon=":material/fluid_balance:")
+tests = st.Page("admin_pages/tests.py", title="Available Tests", icon=":material/fluid_balance:")
 
 # general user
 user_tasks = st.Page("user_pages/tasks.py", title="Tasks", icon=":material/assignment:")
