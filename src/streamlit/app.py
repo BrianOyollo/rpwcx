@@ -20,7 +20,7 @@ conn = st.session_state["conn"]
 
 def login():
     with st.container(border=False, horizontal=False, horizontal_alignment='center', vertical_alignment='center'):
-        st.image("src/streamlit/static/images/rpwc.png")
+        st.image("static/images/rpwc.png")
         st.button("**Login**", on_click=st.login, icon=":material/login:", type='primary')
 
 

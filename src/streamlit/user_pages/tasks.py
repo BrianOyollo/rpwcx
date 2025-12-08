@@ -3,36 +3,12 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import text, exc
 
+from utils import fetch_categories_and_tests,categorize_selected_tests
 
 conn = st.session_state["conn"]
 
 st.title("My Tasks")
 
-
-
-
-
-@st.cache_data(ttl=0)
-def fetch_categories_and_tests():
-    categories_tests = conn.query("select category_name, available_tests from tests", ttl=0)
-
-    test_category_map = {}
-    for _, row in categories_tests.iterrows():
-        category = row['category_name']
-        for test in row['available_tests']:
-            test_category_map[test]=category
-
-    return test_category_map
-
-def categorize_selected_tests(selected_tests):
-    test_category_map = fetch_categories_and_tests()
-
-    categorized = {}
-    for test in selected_tests:
-        category = test_category_map.get(test, "Uncategorized")
-        categorized.setdefault(category, []).append(test)
-    
-    return categorized
 
 
 def requests_list(tab:str = None):
@@ -83,7 +59,7 @@ def requests_list(tab:str = None):
                 with st.container(border=False, horizontal=True, horizontal_alignment='left', vertical_alignment='center'):
 
                     with st.popover("🧪 Tests"):
-                        categorized_tests = categorize_selected_tests(req['selected_tests'])
+                        categorized_tests = categorize_selected_tests(conn, req['selected_tests'])
                         for k,v in categorized_tests.items():
                             st.write(f"**:orange[{k}]**")
                             st.markdown(f",".join([f":blue-badge[{req}]" for req in v ]))

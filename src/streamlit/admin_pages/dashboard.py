@@ -60,52 +60,70 @@ with col5:
     # st.write(":gray[Requests Over Time]")
     requests["created_date"] = pd.to_datetime(requests["created_at"]).dt.date
     requests_overtime = requests.groupby("created_date").size().reset_index(name="count")
-    fig = px.line(
+    fig_requests_overtime = px.line(
         requests_overtime, 
         x="created_date", 
         y="count", 
         markers=True,
         title="Requests Over Time"
     )
-    fig.update_yaxes(
+    fig_requests_overtime.update_yaxes(
         range=[0, requests_overtime['count'].max()+1],
-        dtick=2,
+        # dtick=2,
         nticks=10
     )
-    fig.update_layout(
+    fig_requests_overtime.update_layout(
         margin=dict(t=80),
+        xaxis_title="",
+        yaxis_title=""
     )
-    st.plotly_chart(fig)
+    st.plotly_chart(fig_requests_overtime)
 
 
 
 with col6:
-    col6_tabs = st.tabs(['Most Requested Tests', 'Most Requested Categories'])
-    with col6_tabs[0]:
-        # st.write(":gray[Most Requested Tests]")
-
-        tests_exploded = requests.explode("selected_tests")
-        test_popularity = (
-            tests_exploded.groupby("selected_tests")
-                .size()
-                .reset_index(name="count")
-                .sort_values("count", ascending=False)
-        )
-
-        # top_n = st.selectbox("Show top:", [5, 10, 20], index=1)
-
-        # st.bar_chart(
-        #     test_popularity.head(10).set_index("selected_tests"),
-        #     x_label="",
-        #     y_label="Count"
-        # )
-        test_popularity.columns = ['Test', "Count"]
-        st.dataframe(test_popularity, hide_index=True)
+    pass
 
 with st.container(border=True):
-    st.write("**User Type Breakdown**")
-    pie_data = users["user_type"].value_counts().reset_index()
-    pie_data.columns = ["Type", "Count"]
-    st.dataframe(pie_data, hide_index=True)
+    tests_exploded = requests.explode("selected_tests")
+
+    test_popularity = (
+        tests_exploded.groupby("selected_tests")
+        .size()
+        .reset_index(name="Count")
+        .sort_values("Count", ascending=True)
+    )
+
+    test_popularity.columns = ['Test', "Count"]
+    test_popularity['Test'] = test_popularity['Test'].str.replace(r"\s*\[.*?\]$", "", regex=True)
+    # test_popularity['Test'] = test_popularity['Test'].str.replace(r"\s*\[.*?\]$", "", regex=True)
+
+    fig_test_popularity = px.bar(
+        test_popularity,
+        x="Count",
+        y="Test",
+        orientation="h",
+        title="Most Requested Tests",
+    )
+
+    # Improve readability and aesthetics
+    fig_test_popularity.update_layout(
+        margin=dict(l=150, r=30, t=70, b=30),  # extra room for long test names
+        xaxis_title="",                        # remove default axis label
+        yaxis_title="",
+        plot_bgcolor="white",
+    )
+
+    # Remove gridlines to clean up look
+    fig_test_popularity.update_xaxes(showgrid=False)
+    fig_test_popularity.update_yaxes(showgrid=False)
+
+    # Add data labels on bars
+    fig_test_popularity.update_traces(
+        texttemplate='%{x}',
+        textposition='outside'
+    )
+
+    st.plotly_chart(fig_test_popularity, width='stretch')
 
 
