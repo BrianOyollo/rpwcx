@@ -315,6 +315,10 @@ with st.container(border=False, horizontal=True):
                 ),
                 margin=dict(l=30, r=30, t=95, b=10)
             )
+            fig.update_yaxes(
+                range=[0, tg_active_users['count'].max()+1],
+                dtick=2
+            )
 
             fig.update_traces(textposition='inside', texttemplate='%{y}',)
             st.plotly_chart(fig)
