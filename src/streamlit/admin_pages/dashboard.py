@@ -310,7 +310,7 @@ with st.container(border=False, horizontal=True):
                 x=0.5,
                 title=""
             ),
-            margin=dict(l=30, r=30, t=85, b=10)
+            margin=dict(l=30, r=30, t=95, b=10)
         )
 
         fig.update_traces(textposition='inside', texttemplate='%{y}',)
