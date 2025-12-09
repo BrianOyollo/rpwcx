@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import re
+from datetime import datetime
 import plotly.express as px
 
 from utils import fetch_categories_and_tests
@@ -9,32 +10,40 @@ st.set_page_config(layout="wide")
 
 conn = st.connection("postgresql", type="sql")
 
-st.title("Dashboard")
-
+if "dashboard_title_extra" not in st.session_state:
+    st.session_state.dashboard_title_extra = None
 
 # dashboard filters
 dash_period = st.sidebar.selectbox(
     "Dashboard Period", 
-    options = ['This week', "This Month", "Yearly", 'All Time'], 
+    options = ['This week', "This Month", "Yearly", 'All Time'],
+    index = 0,
     label_visibility='visible'
 )
 
+
+dash_year = dash_month = None
+months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
 if dash_period == 'Yearly':
+    years = [y for y in range(2020,pd.Timestamp.now().year+1, 1)]
     dash_year = st.sidebar.selectbox(
         "Year",
-        options = [2023, 2024, 2025,2026],
+        options = years,
+        index = years.index(pd.Timestamp.now().year),
         label_visibility='visible'
     )
 
     dash_month = st.sidebar.selectbox(
         "Month",
-        options = ["Jan", "Feb", "Mar"],
+        options = months,
+        # index = months.index(pd.Timestamp.now().month_name()[:3]),
+        index = None,
         label_visibility='visible'
     )
 
-st.write(" ")
 
-def load_data():
+def load_data(dash_period, dash_year, dash_month):
     """
     Fetches the main datasets from the database for the application.
 
@@ -46,10 +55,65 @@ def load_data():
     """
     users = conn.query("SELECT * FROM users WHERE is_deleted = false", ttl=0)
     requests = conn.query("SELECT * FROM requests", ttl=0)
-    tests = conn.query("SELECT * FROM tests", ttl=0)
-    return users, requests, tests
+    tests = conn.query("SELECT * FROM tests", ttl=0)     
+    
+    if dash_period == 'This week':
+        weekly_users = users[users['created_at'] >= pd.Timestamp.now() - pd.Timedelta(days=7)]
+        weekly_requests = requests[requests['created_at'] >= pd.Timestamp.now() - pd.Timedelta(days=7)]
+        weekly_tests = tests[tests['created_at'] >= pd.Timestamp.now() - pd.Timedelta(days=7)]
 
-users, requests, tests = load_data()
+        st.session_state.dashboard_title_extra = "This Week"
+        return weekly_users, weekly_requests, weekly_tests
+    
+    elif dash_period == 'This Month':
+        month = pd.Timestamp.now().month
+        monthly_users = users[users['created_at'].dt.month == month]
+        monthly_requests = requests[requests['created_at'].dt.month == month]
+        monthly_tests = tests[tests['created_at'].dt.month == month]
+
+        st.session_state.dashboard_title_extra = "This Month"
+
+        return monthly_users, monthly_requests, monthly_tests
+
+    elif dash_period == 'Yearly':
+
+        yearly_users = users[users['created_at'].dt.year == dash_year]
+        yearly_requests = requests[requests['created_at'].dt.year == dash_year]
+        yearly_tests = tests[tests['created_at'].dt.year == dash_year]
+
+        st.session_state.dashboard_title_extra = f"{dash_year}"
+
+        if dash_month:
+            dash_month_int = months.index(dash_month)+1
+            yearly_users = yearly_users[yearly_users['created_at'].dt.month == dash_month_int]
+            yearly_requests = yearly_requests[yearly_requests['created_at'].dt.month == dash_month_int]
+            yearly_tests = yearly_tests[yearly_tests['created_at'].dt.month == dash_month_int]
+
+            st.session_state.dashboard_title_extra = f"{dash_month} {dash_year}"
+
+            return yearly_users, yearly_requests, yearly_tests
+
+
+        return yearly_users, yearly_requests, yearly_tests
+    
+    else:
+        st.session_state.dashboard_title_extra = f"All Time"
+        return users, requests, tests
+    
+users, requests, tests = load_data(dash_period, dash_year, dash_month)
+
+with st.container(border=False, horizontal=False, horizontal_alignment='left'):
+    st.markdown(
+        f"""
+        <div style="align-items:center; gap:5px;">
+            <h1 style="margin:0; padding:0;">Dashboard</h1>
+            <span style="font-size:15px; color:#666;">{st.session_state.dashboard_title_extra}</span>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    st.space("small")
+
 
 st.write("**Requests Breakdown**")
 
