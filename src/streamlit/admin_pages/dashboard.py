@@ -308,7 +308,7 @@ with st.container(border=False, horizontal=True):
                 legend=dict(
                     orientation='h',
                     yanchor='bottom',
-                    y=-0.30,
+                    y=-0.50,
                     xanchor='center',
                     x=0.5,
                     title=""
