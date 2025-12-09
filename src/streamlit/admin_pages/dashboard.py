@@ -42,6 +42,28 @@ if dash_period == 'Yearly':
         label_visibility='visible'
     )
 
+def end_of_month(year:int, month:int)-> pd.Timestamp:
+    """
+    Calculate the final moment of a given month.
+
+    Given a specific year and month, this function returns a pandas Timestamp
+    representing the **last day of that month at 23:59:59**. It correctly accounts
+    for varying month lengths and leap years.
+
+    Args:
+        year (int): The target year (e.g., 2025).
+        month (int): The target month (1–12).
+
+    Returns:
+        pandas.Timestamp: A timestamp set to the final second of the last day of
+        the specified month. Example:
+            end_of_month(2024, 2) → Timestamp('2024-02-29 23:59:59')
+    """
+    ts = pd.Timestamp(year=year, month=month, day=1)
+    very_end_of_month = ts + pd.offsets.MonthEnd(1)
+    very_end_of_month.replace(hour=23,minute=59,second=59)
+    return very_end_of_month
+
 
 def load_data(dash_period, dash_year, dash_month):
     """
@@ -53,21 +75,23 @@ def load_data(dash_period, dash_year, dash_month):
             - requests (DataFrame): All lab requests from the `requests` table.
             - tests (DataFrame): All test categories and available tests from the `tests` table.
     """
-    users = conn.query("SELECT * FROM users WHERE is_deleted = false", ttl=0)
+    users = conn.query("SELECT user_type, created_at, (telegram_chat_id IS NOT NULL) AS tg_active FROM users WHERE is_deleted = false", ttl=0)
     requests = conn.query("SELECT * FROM requests", ttl=0)
     tests = conn.query("SELECT * FROM tests", ttl=0)     
     
     if dash_period == 'This week':
-        weekly_users = users[users['created_at'] >= pd.Timestamp.now() - pd.Timedelta(days=7)]
+        # weekly_users = users[users['created_at'] >= pd.Timestamp.now() - pd.Timedelta(days=7)]
         weekly_requests = requests[requests['created_at'] >= pd.Timestamp.now() - pd.Timedelta(days=7)]
         weekly_tests = tests[tests['created_at'] >= pd.Timestamp.now() - pd.Timedelta(days=7)]
 
         st.session_state.dashboard_title_extra = "This Week"
-        return weekly_users, weekly_requests, weekly_tests
+        return users, weekly_requests, weekly_tests
     
     elif dash_period == 'This Month':
         month = pd.Timestamp.now().month
-        monthly_users = users[users['created_at'].dt.month == month]
+        # end_of_month = end_of_month(pd.Timestamp.now().year, month)
+
+        monthly_users = users[users['created_at'].dt.month <= month ]
         monthly_requests = requests[requests['created_at'].dt.month == month]
         monthly_tests = tests[tests['created_at'].dt.month == month]
 
@@ -77,7 +101,7 @@ def load_data(dash_period, dash_year, dash_month):
 
     elif dash_period == 'Yearly':
 
-        yearly_users = users[users['created_at'].dt.year == dash_year]
+        yearly_users = users[users['created_at'].dt.year <= dash_year]
         yearly_requests = requests[requests['created_at'].dt.year == dash_year]
         yearly_tests = tests[tests['created_at'].dt.year == dash_year]
 
@@ -85,7 +109,7 @@ def load_data(dash_period, dash_year, dash_month):
 
         if dash_month:
             dash_month_int = months.index(dash_month)+1
-            yearly_users = yearly_users[yearly_users['created_at'].dt.month == dash_month_int]
+            yearly_users = yearly_users[yearly_users['created_at'].dt.month <= dash_month_int]
             yearly_requests = yearly_requests[yearly_requests['created_at'].dt.month == dash_month_int]
             yearly_tests = yearly_tests[yearly_tests['created_at'].dt.month == dash_month_int]
 
@@ -100,6 +124,8 @@ def load_data(dash_period, dash_year, dash_month):
         st.session_state.dashboard_title_extra = f"All Time"
         return users, requests, tests
     
+
+    
 users, requests, tests = load_data(dash_period, dash_year, dash_month)
 
 with st.container(border=False, horizontal=False, horizontal_alignment='left'):
@@ -113,9 +139,6 @@ with st.container(border=False, horizontal=False, horizontal_alignment='left'):
         unsafe_allow_html=True
     )
     st.space("small")
-
-
-st.write("**Requests Breakdown**")
 
 with st.container(border=False, horizontal=True, horizontal_alignment='distribute'):
 # col1, col2, col3, col4 = st.columns(4)
@@ -153,7 +176,7 @@ with col5:
         yaxis_title="",
         height=300
     )
-    st.plotly_chart(fig_requests_overtime)
+    st.plotly_chart(fig_requests_overtime, config = {'scrollZoom': False})
 
 
 with col6:
@@ -212,7 +235,6 @@ with st.container(border=True):
         title="Top 10 Requested Tests",
     )
 
-    # Improve readability and aesthetics
     fig_test_popularity.update_layout(
         margin=dict(l=150, r=30, t=80, b=0),
         xaxis_title="",                       
@@ -232,5 +254,66 @@ with st.container(border=True):
     )
 
     st.plotly_chart(fig_test_popularity, width='stretch')
+
+
+with st.container(border=False, horizontal=True):
+    
+    users_type = users['user_type'].value_counts().reset_index()
+
+    with st.container(border=True, horizontal=False):
+        if users_type.empty:
+            
+                st.write("**User Count**")
+                st.info("No user data for this period")
+        else:
+            fig_user_type = px.pie(
+                users_type,
+                names='user_type',
+                values='count',
+                title="User Count",
+            )
+
+            fig_user_type.update_layout(
+                margin=dict(l=30, r=30, t=80, b=0),
+                height=350,
+                showlegend = False
+            )
+
+            fig_user_type.update_traces(textposition='inside', textinfo='value+label')
+            st.plotly_chart(fig_user_type)
+
+    with st.container(border=True, horizontal=False):
+        tg_active_users = users.groupby(['user_type', 'tg_active']).size().reset_index(name='count')
+        # st.write(tg_active_users)
+
+        fig = px.bar(
+            tg_active_users,
+            x='user_type',
+            y='count',
+            color='tg_active',
+            title='Telegram Active Users by Role',
+            text='count'
+        )
+        fig.update_layout(
+            barmode='stack',
+            height=350,
+            xaxis_title='',
+            yaxis_title='',
+            legend=dict(
+                orientation='h',
+                yanchor='bottom',
+                y=-0.30,
+                xanchor='center',
+                x=0.5,
+                title=""
+            ),
+            margin=dict(l=30, r=30, t=50, b=70)
+        )
+
+        fig.update_traces(textposition='inside', texttemplate='%{y}',)
+        st.plotly_chart(fig)
+        
+
+    
 
 
