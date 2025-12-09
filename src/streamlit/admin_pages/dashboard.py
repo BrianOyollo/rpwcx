@@ -258,9 +258,11 @@ with st.container(border=True):
 
 with st.container(border=False, horizontal=True):
     
-    users_type = users['user_type'].value_counts().reset_index()
+    users['user_type'] = users['user_type'].str.title()
+    users['tg_active'] = users['tg_active'].map({True: 'Active', False: 'Not Active'})
 
-    with st.container(border=True, horizontal=False):
+    with st.container(border=True, horizontal=False, width=500):
+        users_type = users['user_type'].value_counts().reset_index()
         if users_type.empty:
             
                 st.write("**User Count**")
@@ -283,6 +285,7 @@ with st.container(border=False, horizontal=True):
             st.plotly_chart(fig_user_type)
 
     with st.container(border=True, horizontal=False):
+
         tg_active_users = users.groupby(['user_type', 'tg_active']).size().reset_index(name='count')
         # st.write(tg_active_users)
 
