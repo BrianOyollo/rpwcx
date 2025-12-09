@@ -277,7 +277,8 @@ with st.container(border=False, horizontal=True):
 
             fig_user_type.update_layout(
                 margin=dict(l=30, r=30, t=80, b=0),
-                height=350,
+                height=300,
+                width=300,
                 showlegend = False
             )
 
@@ -287,34 +288,36 @@ with st.container(border=False, horizontal=True):
     with st.container(border=True, horizontal=False):
 
         tg_active_users = users.groupby(['user_type', 'tg_active']).size().reset_index(name='count')
-        # st.write(tg_active_users)
+        
+        if tg_active_users.empty:
+            st.info("No user data for this period")
+        else:
+            fig = px.bar(
+                tg_active_users,
+                x='user_type',
+                y='count',
+                color='tg_active',
+                title='Telegram Active Users by Role',
+                text='count'
+            )
+            fig.update_layout(
+                barmode='stack',
+                height=300,
+                xaxis_title='',
+                yaxis_title='',
+                legend=dict(
+                    orientation='h',
+                    yanchor='bottom',
+                    y=-0.30,
+                    xanchor='center',
+                    x=0.5,
+                    title=""
+                ),
+                margin=dict(l=30, r=30, t=95, b=10)
+            )
 
-        fig = px.bar(
-            tg_active_users,
-            x='user_type',
-            y='count',
-            color='tg_active',
-            title='Telegram Active Users by Role',
-            text='count'
-        )
-        fig.update_layout(
-            barmode='stack',
-            height=350,
-            xaxis_title='',
-            yaxis_title='',
-            legend=dict(
-                orientation='h',
-                yanchor='bottom',
-                y=-0.30,
-                xanchor='center',
-                x=0.5,
-                title=""
-            ),
-            margin=dict(l=30, r=30, t=95, b=10)
-        )
-
-        fig.update_traces(textposition='inside', texttemplate='%{y}',)
-        st.plotly_chart(fig)
+            fig.update_traces(textposition='inside', texttemplate='%{y}',)
+            st.plotly_chart(fig)
         
 
     
