@@ -158,25 +158,29 @@ with col5:
     # st.write(":gray[Requests Over Time]")
     requests["created_date"] = pd.to_datetime(requests["created_at"]).dt.date
     requests_overtime = requests.groupby("created_date").size().reset_index(name="count")
-    fig_requests_overtime = px.line(
-        requests_overtime, 
-        x="created_date", 
-        y="count", 
-        markers=True,
-        title="Requests Over Time"
-    )
-    fig_requests_overtime.update_yaxes(
-        range=[0, requests_overtime['count'].max()+1],
-        # dtick=2,
-        nticks=10
-    )
-    fig_requests_overtime.update_layout(
-        margin=dict(t=80),
-        xaxis_title="",
-        yaxis_title="",
-        height=300
-    )
-    st.plotly_chart(fig_requests_overtime, config = {'scrollZoom': False})
+    if requests_overtime.empty:
+        st.write("**Requests Over Time**")
+        st.info("No data for this period")
+    else:
+        fig_requests_overtime = px.line(
+            requests_overtime, 
+            x="created_date", 
+            y="count", 
+            markers=True,
+            title="Requests Over Time"
+        )
+        fig_requests_overtime.update_yaxes(
+            range=[0, requests_overtime['count'].max()+1],
+            # dtick=2,
+            nticks=10
+        )
+        fig_requests_overtime.update_layout(
+            margin=dict(t=80),
+            xaxis_title="",
+            yaxis_title="",
+            height=300
+        )
+        st.plotly_chart(fig_requests_overtime, config = {'scrollZoom': False})
 
 
 with col6:
@@ -186,32 +190,35 @@ with col6:
         lambda x: test_category_map.get(x, "Uncategorized")
     )
     category_popularity = requests_exploded.groupby('category').size().reset_index(name="count").sort_values("count", ascending=True)
-    
-    fig_category_popularity = px.bar(
-        category_popularity.head(5).sort_values("count", ascending=True), 
-        x='count', 
-        y='category', 
-        orientation='h',
-        title="Top 5 Requested Categories",
-    )
-    fig_category_popularity.update_layout(
-        margin=dict(l=150, r=30, t=80, b=0),
-        xaxis_title="",                       
-        yaxis_title="",
-        plot_bgcolor="white",
-        height=300
-    )
+    if category_popularity.empty:
+        st.write("**Top 5 Requested Categories**")
+        st.info("**No lab requests data for this period**")
+    else:
+        fig_category_popularity = px.bar(
+            category_popularity.head(5).sort_values("count", ascending=True), 
+            x='count', 
+            y='category', 
+            orientation='h',
+            title="Top 5 Requested Categories",
+        )
+        fig_category_popularity.update_layout(
+            margin=dict(l=150, r=30, t=80, b=0),
+            xaxis_title="",                       
+            yaxis_title="",
+            plot_bgcolor="white",
+            height=300
+        )
 
-    fig_category_popularity.update_xaxes(showgrid=False)
-    fig_category_popularity.update_yaxes(showgrid=False)
+        fig_category_popularity.update_xaxes(showgrid=False)
+        fig_category_popularity.update_yaxes(showgrid=False)
 
-    # Add data labels on bars
-    fig_category_popularity.update_traces(
-        texttemplate='%{x}',
-        textposition='outside'
-    )
+        # Add data labels on bars
+        fig_category_popularity.update_traces(
+            texttemplate='%{x}',
+            textposition='outside'
+        )
 
-    st.plotly_chart(fig_category_popularity)
+        st.plotly_chart(fig_category_popularity)
 
 
 with st.container(border=True):
@@ -223,37 +230,40 @@ with st.container(border=True):
         .reset_index(name="Count")
         .sort_values("Count", ascending=False)
     )
+    if test_popularity.empty:
+        st.write("**User Count**")
+        st.info("No tests data for this period")
+    else:
+        test_popularity.columns = ['Test', "Count"]
+        test_popularity['Test'] = test_popularity['Test'].str.replace(r"\s*\[.*?\]$", "", regex=True)
 
-    test_popularity.columns = ['Test', "Count"]
-    test_popularity['Test'] = test_popularity['Test'].str.replace(r"\s*\[.*?\]$", "", regex=True)
+        fig_test_popularity = px.bar(
+            test_popularity.head(10).sort_values("Count", ascending=True),
+            x="Count",
+            y="Test",
+            orientation="h",
+            title="Top 10 Requested Tests",
+        )
 
-    fig_test_popularity = px.bar(
-        test_popularity.head(10).sort_values("Count", ascending=True),
-        x="Count",
-        y="Test",
-        orientation="h",
-        title="Top 10 Requested Tests",
-    )
+        fig_test_popularity.update_layout(
+            margin=dict(l=150, r=30, t=80, b=0),
+            xaxis_title="",                       
+            yaxis_title="",
+            plot_bgcolor="white",
+            height=350
+        )
 
-    fig_test_popularity.update_layout(
-        margin=dict(l=150, r=30, t=80, b=0),
-        xaxis_title="",                       
-        yaxis_title="",
-        plot_bgcolor="white",
-        height=350
-    )
+        # Remove gridlines to clean up look
+        fig_test_popularity.update_xaxes(showgrid=False)
+        fig_test_popularity.update_yaxes(showgrid=False)
 
-    # Remove gridlines to clean up look
-    fig_test_popularity.update_xaxes(showgrid=False)
-    fig_test_popularity.update_yaxes(showgrid=False)
+        # Add data labels on bars
+        fig_test_popularity.update_traces(
+            texttemplate='%{x}',
+            textposition='outside'
+        )
 
-    # Add data labels on bars
-    fig_test_popularity.update_traces(
-        texttemplate='%{x}',
-        textposition='outside'
-    )
-
-    st.plotly_chart(fig_test_popularity, width='stretch')
+        st.plotly_chart(fig_test_popularity, width='stretch')
 
 
 with st.container(border=False, horizontal=True):
@@ -264,9 +274,8 @@ with st.container(border=False, horizontal=True):
     with st.container(border=True, horizontal=False, width=500):
         users_type = users['user_type'].value_counts().reset_index()
         if users_type.empty:
-            
-                st.write("**User Count**")
-                st.info("No user data for this period")
+            st.write("**User Count**")
+            st.info("No user data for this period")
         else:
             fig_user_type = px.pie(
                 users_type,
@@ -290,6 +299,7 @@ with st.container(border=False, horizontal=True):
         tg_active_users = users.groupby(['user_type', 'tg_active']).size().reset_index(name='count')
         
         if tg_active_users.empty:
+            st.write("**# Users Active on Telegram**")
             st.info("No user data for this period")
         else:
             fig = px.bar(
