@@ -28,34 +28,34 @@ with st.container(
             horizontal_alignment="center",
             vertical_alignment="center",
             width=400, 
-            height=280
+            height=300
         ):
             st.image(st.user.picture)
             st.header(st.user["name"].title(), width="content")
             st.caption(user_data['user_type'].title(), width='content')
 
-        with st.container(border=True, horizontal=False, height=280):
+        with st.container(border=True, horizontal=False, height=300):
             st.markdown("#### :orange[Account Details]")
 
             with st.container(border=False, horizontal=True):
             # email_cols = st.columns([.8,2], gap='small')
-                st.markdown(f"**Email:**", width=120)
+                st.markdown(f"**Email:**", width=115)
                 st.markdown(st.user.email)
 
             with st.container(border=False, horizontal=True):
-                st.markdown("**Phone:**", width=120)
+                st.markdown("**Phone:**", width=115)
                 st.markdown(user_data['contact'])
 
             with st.container(border=False, horizontal=True):
-                st.markdown("**Account Status:**", width=120)
+                st.markdown("**Account Status:**", width=115)
                 st.markdown(":green[Verified]" if st.user.email_verified else 'Not Verified')
 
             with st.container(border=False, horizontal=True):
-                st.markdown("**Telegram Status:**", width=120)
+                st.markdown("**Telegram Status:**", width=115)
                 st.markdown(":green[Linked]" if user_data["telegram_chat_id"] else 'Not Linked')
 
             with st.container(border=False, horizontal=True):
-                st.markdown("**Date Joined:**", width=120)
+                st.markdown("**Date Joined:**", width=115)
                 st.markdown(user_data['created_at'].strftime("%b %d, %Y • %I:%M %p"))
     
     with st.container(border=True):
