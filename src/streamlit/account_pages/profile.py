@@ -56,7 +56,7 @@ with st.container(
 
             with st.container(border=False, horizontal=True):
                 st.markdown("**Date Joined:**", width=120)
-                st.markdown(user_data['created_at'])
+                st.markdown(user_data['created_at'].strftime("%b %d, %Y • %I:%M %p"))
     
     with st.container(border=True):
         st.markdown("#### :orange[Activity Overview]")
