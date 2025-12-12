@@ -56,7 +56,7 @@ def requests_list(tab: str = None):
 
         for req in tab_list:
             with st.container(border=True, horizontal=False):
-                patient = f"{req['first_name'].replace('_', ' ')} {req['middle_name'].replace('_', ' ')} {req['surname'].replace('_', ' ')}"
+                patient = f"{req['first_name'].replace('_', ' ')} {req['surname'].replace('_', ' ')}"
                 gender = req["gender"]
                 age = relativedelta(datetime.today(), req["dob"]).years
                 collection_date = req["collection_date"].strftime("%b %d, %Y")
