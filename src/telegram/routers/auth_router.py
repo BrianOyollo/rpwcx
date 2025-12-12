@@ -13,26 +13,27 @@ GROUP_ID = int(os.getenv("TELEGRAM_GROUP_ID"))
 
 auth_router = Router()
 
+
 @auth_router.message(Command("register"))
-async def register_new_user(message:Message, command:CommandObject):
-    if message.chat.type != 'group':
+async def register_new_user(message: Message, command: CommandObject):
+    if message.chat.type != "group":
         await message.answer("Unauthorized! This command is only available from group")
         return
-    
+
     if message.chat.id != GROUP_ID:
         await message.answer("Unauthorized! This is a private bot")
         return
-    
+
     sender_id = message.from_user.id
     sender_name = message.from_user.first_name
     args = command.args
 
-    if args is None :
+    if args is None:
         await message.answer(
             f"Hello {sender_name}, \nPlease provide your email to register your account",
-            parse_mode="markdown"
+            parse_mode="markdown",
         )
-        return 
+        return
 
     try:
         with utils.get_connection() as conn:
@@ -47,12 +48,11 @@ async def register_new_user(message:Message, command:CommandObject):
                         \nThe email you entered does not exist in our system. 
                         \nPlease provide the correct email as follows: /register <email>
                         """
-                        )
+                    )
                     return
-                
+
                 # user tries register an email that is already linked to a telegram account
                 if email_valid[9]:
-                
                     ## case 1: same user but from a different device(same chat id)
                     if email_valid[9] == sender_id:
                         await message.answer(
@@ -69,15 +69,17 @@ async def register_new_user(message:Message, command:CommandObject):
                         )
                         return
 
-
-                cur.execute("UPDATE users SET telegram_chat_id=%s WHERE email=%s", (sender_id,args))
+                cur.execute(
+                    "UPDATE users SET telegram_chat_id=%s WHERE email=%s",
+                    (sender_id, args),
+                )
                 conn.commit()
                 await message.answer(
                     f"""Hello {sender_name}, 
                     \nYour registration was successful.
                     \nYou can now communicate with the bot privately to view and update your assignments"""
                 )
-    
+
     # user tries to register another email from the same telegram account
     except errors.UniqueViolation as e:
         await message.answer(
@@ -93,10 +95,11 @@ async def register_new_user(message:Message, command:CommandObject):
             \nPlease try again later or contact the admin for support"""
         )
 
-async def user_is_group_member(user_id, bot:Bot) -> bool:
+
+async def user_is_group_member(user_id, bot: Bot) -> bool:
     """
     Checks if a user is a member of the specified Telegram group.
-    
+
     :param user-id: The user_id to check.
     :param bot: The Bot instance (injected by aiogram).
     :param group_id: The target group ID (passed in the filter arguments).
@@ -105,15 +108,16 @@ async def user_is_group_member(user_id, bot:Bot) -> bool:
 
     try:
         chat_member = await bot.get_chat_member(GROUP_ID, user_id)
-        return chat_member.status in ['member', 'creator', 'administrator']
+        return chat_member.status in ["member", "creator", "administrator"]
     except Exception as e:
         print(e)
         return False
 
-def user_is_in_db(user_id:int) -> bool:
+
+def user_is_in_db(user_id: int) -> bool:
     """
     Checks if the user exists in the custom database.
-    
+
     :param message: The incoming message object.
     :return: True if the user is found in the database, False otherwise.
     """
@@ -121,9 +125,9 @@ def user_is_in_db(user_id:int) -> bool:
     try:
         with utils.get_connection() as conn:
             with conn.cursor() as cur:
-                cur.execute('SELECT 1 FROM users WHERE telegram_chat_id=%s', (user_id, ))
+                cur.execute("SELECT 1 FROM users WHERE telegram_chat_id=%s", (user_id,))
                 user_exists = cur.fetchone()
                 return user_exists is not None
-            
+
     except Exception as e:
         print(e)

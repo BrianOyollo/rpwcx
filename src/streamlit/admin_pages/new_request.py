@@ -22,12 +22,12 @@ if "selected_tests" not in st.session_state:
     st.session_state.selected_tests = set()
 
 
-st.header("Requests", divider="orange")
+st.header("Lab Request Form", divider="orange")
 
 conn = st.session_state["conn"]
 
 
-def create_request():
+def create_request(form_data):
     """
     Creates a new lab request from the current session state form.
 
@@ -44,255 +44,395 @@ def create_request():
         - All names are sanitized by replacing spaces with underscores.
         - The function performs database modification and page navigation.
     """
+
+    # pull selected tests from session state
     data = st.session_state.lrf_form
     data["tests"] = st.session_state.selected_tests
 
     # ignore new doctor details if a doctor in the system is also selected
-    doctor = data["doctor"]
-    if doctor:
-        data["new_doctor_doc_full_names"] = None
-        data["new_doctor_doc_phone"] = None
-        data["new_doctor_doc_email"] = None
+    # doctor = data["doctor"]
+    # if doctor:
+    #     data["new_doctor_doc_full_names"] = None
+    #     data["new_doctor_doc_phone"] = None
+    #     data["new_doctor_doc_email"] = None
 
-    db_data = {
-        "first_name": data.get("patient_first_name").strip().replace(" ", "_"),
-        "surname": data.get("patient_surname").strip().replace(" ", "_"),
-        "middle_name": data.get("patient_middle_name", "").strip().replace(" ", "_"),
-        "dob": data.get("patient_dob"),
-        "gender": data.get("patient_gender").strip(),
-        "phone": data.get("patient_phone").strip(),
-        "email": data.get("patient_email").strip(),
-        "location": data.get("patient_location").strip(),
-        # doctor in the system
-        "doctor_dkl_code": data.get("doctor").split("-")[1].strip(),
-        # tests
-        "selected_tests": list(data.get("tests", [])),
-        "assign_to": data.get("assign_to").split("-")[1].strip(),
-        "priority": data.get("priority"),
-        "collection_date": data.get("collection_date"),
-        "collection_time": data.get("collection_time"),
-    }
+    # db_data = {
+    #     "first_name": data.get("patient_first_name").strip().replace(" ", "_"),
+    #     "surname": data.get("patient_surname").strip().replace(" ", "_"),
+    #     "dob": data.get("patient_dob"),
+    #     "gender": data.get("patient_gender").strip(),
+    #     "phone": data.get("patient_phone").strip(),
+    #     "location": data.get("patient_location").strip(),
+    #     "selected_tests": list(data.get("tests", [])),
+    #     "assign_to": data.get("assign_to").split("-")[1].strip(),
+    #     "priority": data.get("priority"),
+    #     "collection_date": data.get("collection_date"),
+    #     "collection_time": data.get("collection_time"),
+    # }
 
     with conn.session as session:
         try:
             insert_query = text(
                 """
-                INSERT INTO requests (first_name, surname, middle_name, dob, gender, phone, email, location, 
-                doctor_dkl_code,selected_tests, assign_to, priority, collection_date, collection_time)
-                VALUES(:first_name, :surname, :middle_name, :dob, :gender, :phone, :email, :location, 
-                :doctor_dkl_code,:selected_tests, :assign_to, :priority, :collection_date, :collection_time)
+                INSERT INTO requests (first_name, surname, dob, gender, phone, location, 
+                selected_tests, assign_to, priority, collection_date, collection_time)
+                VALUES(:first_name, :surname,:dob, :gender, :phone, :location, 
+                :selected_tests, :assign_to, :priority, :collection_date, :collection_time)
                 """
             )
-            session.execute(insert_query, db_data)
+            session.execute(insert_query, form_data)
             session.commit()
+
+            print("data committed")
 
             st.session_state.lrf_form = {}
             st.session_state.selected_tests = set()
             st.switch_page("admin_pages/lab_requests.py")
         except Exception as e:
-            st.print(e)
+            print(e)
             st.error(
                 "Error saving lab request. Please try again or contact system admin for support"
             )
+            st.stop()
 
 
 available_tests_df = prepare_tests_df(conn)
 
 lab_req_formm_ctn = st.container(
-    border=True,
+    border=False,
     horizontal=False,
     horizontal_alignment="center",
     vertical_alignment="top",
+    height=470,
 )
 
 with lab_req_formm_ctn:
-    with st.container(horizontal_alignment="center"):
-        st.markdown("#### Lab Request Form", width="content")
 
-        patient_details, appointment_details, test_details = st.tabs(
-            ["Patient Details", "Appointment Details", "Tests Selection"]
-        )
-
-        # =========== patient details ==========================
-        with patient_details:
-            with st.form("LRF-patient-details", border=False, enter_to_submit=False):
-                with st.container(
-                    border=False,
-                    horizontal=False,
-                    horizontal_alignment="center",
-                    vertical_alignment="top",
-                    height=450,
-                ):
-                    with st.container(horizontal=True, horizontal_alignment="left"):
-                        f_name = st.text_input(
-                            "First Name*",
-                            width=350,
-                        )
-                        s_name = st.text_input("Surname*", width=350)
-                        m_name = st.text_input(
-                            "Middle Name", width=350, placeholder="optional"
-                        )
-
-                    with st.container(horizontal=True, horizontal_alignment="left"):
-                        dob = st.date_input(
-                            "Date of Birth*",
-                            format="DD/MM/YYYY",
-                            min_value=datetime(1900, 1, 1),
-                            key="dob",
-                            width=350,
-                        )
-
-                        gender_options = ["Male", "Female", "Other"]
-                        current_gender = st.session_state.lrf_form.get(
-                            "patient_gender", None
-                        )
-                        gender = st.selectbox(
-                            "Gender*",
-                            options=gender_options,
-                            width=350,
-                        )
-
-                        location = st.text_input(
-                            "Location*",
-                            width=350,
-                        )
-
-                    with st.container(horizontal=True, horizontal_alignment="left"):
-                        contact = st.text_input(
-                            "Phone No:*",
-                            key="phone",
-                            width=350,
-                        )
-
-                        email = st.text_input(
-                            "Email",
-                            key="email",
-                            width=350,
-                        )
-
-                    with st.container(horizontal=False, horizontal_alignment="center"):
-                        save_patient_details_btn = st.form_submit_button(
-                            "Save", width=250
-                        )
-                        if save_patient_details_btn:
-                            if (
-                                not f_name
-                                or not s_name
-                                or not dob
-                                or not gender
-                                or not location
-                                or not contact
-                            ):
-                                st.toast(
-                                    ":red[Please provide all the required details]"
-                                )
-                            else:
-                                st.session_state.lrf_form["patient_first_name"] = f_name
-                                st.session_state.lrf_form["patient_surname"] = s_name
-                                st.session_state.lrf_form["patient_middle_name"] = (
-                                    m_name if m_name else ""
-                                )
-                                st.session_state.lrf_form["patient_dob"] = dob
-                                st.session_state.lrf_form["patient_phone"] = contact
-                                st.session_state.lrf_form["patient_email"] = (
-                                    email if email else "N/A"
-                                )
-                                st.session_state.lrf_form["patient_gender"] = gender
-                                st.session_state.lrf_form["patient_location"] = location
-
-                                st.toast(":green[Patient details saved]")
-
-        # =========== Doctor/Clinic details ==========================
-        with appointment_details:
-            with st.form("LRF_clinic_details", border=False, height=450):
-                with st.container(horizontal=True, horizontal_alignment="distribute"):
-                    doctor = st.selectbox(
-                        "Doctor*",
-                        options=fetch_doctors(conn),
-                        index=None,
-                        placeholder="Select an existing doctor",
-                    )
-
-                st.divider()
-                assign_to = st.selectbox(
-                    "Assign to:*", options=fetch_phlebotomists(conn), index=None
+    @st.fragment
+    def patient_details():
+        with st.container(border=True, horizontal=False):
+            with st.container(border=False, horizontal=True, width="stretch"):
+                first_name = st.text_input(
+                    "First Name", placeholder="First Name", label_visibility="visible", key="first_name"
                 )
-                st.divider()
+                surname = st.text_input(
+                    "Surname", placeholder="Surname", label_visibility="visible", key="surname"
+                )
 
-                with st.container(
-                    border=False, horizontal=True, horizontal_alignment="distribute"
-                ):
-                    priority = st.selectbox(
-                        "Priority*",
-                        options=["Routine", "Urgent"],
-                        index=None,
-                        width=400,
-                    )
-                    collection_date = st.date_input("Collection Date*", width=400)
-                    collection_time = st.time_input("Collection Time*", width=400)
+            with st.container(border=False, horizontal=True, width="stretch"):
+                gender = st.selectbox(
+                    "Gender",
+                    options=["Male", "Female", "Other"],
+                    index=None,
+                    placeholder="Gender",
+                    label_visibility="visible",
+                    width="stretch",
+                    key='gender'
+                )
+                dob = st.date_input(
+                    "Date of Birth", 
+                    label_visibility="visible", 
+                    width="stretch", 
+                    key='dob',
+                    format="DD/MM/YYYY",
+                    min_value=datetime(1900, 1, 1),
+                    value = None
+                )
+                phone = st.text_input("Phone", width="stretch", key="phone")
 
-                st.space()
-                with st.container(horizontal=False, horizontal_alignment="center"):
-                    if "patient_first_name" not in st.session_state.lrf_form:
-                        st.form_submit_button(
-                            "Please fill required fields in patient details",
-                            disabled=True,
-                        )
+            location = st.text_input("Location", width="stretch", key="location")
 
-                    else:
-                        save_clinic_details_btn = st.form_submit_button(
-                            "Save", width=250
-                        )
-                        if save_clinic_details_btn:
-                            if not doctor:
-                                st.toast(":red[Please select a doctor]")
-                                st.stop()
+        return first_name, surname, gender, dob, phone, location
 
-                            # ---- Phlebotomist validation ----
-                            if not assign_to:
-                                st.toast(":red[Please assign a phlebotomist]")
-                                st.stop()
+    @st.fragment
+    def appointment_details() -> tuple:
+        with st.container(border=True, horizontal=True):
+            phlebotomist = st.selectbox(
+                "Phlebotomist", options=fetch_phlebotomists(conn), index=None, width=350, key="assign_to"
+            )
+            collection_date = st.date_input(
+                "Collection date", 
+                width="stretch", 
+                value = None,
+                key="collection_date",
+                format="DD/MM/YYYY",
+                min_value=datetime(1900, 1, 1),
+            )
+            collection_time = st.time_input(
+                "Test Collection Time",
+                value = None,
+                width="stretch", 
+                key="collection_time"
+            )
+            priority = st.selectbox(
+                "Priority", options=['Routine', 'Urgent'], index=0, width='stretch', key="priority"
+            )
 
-                            # ---- Priority, date, time validation ----
-                            if (
-                                not priority
-                                or not collection_date
-                                or not collection_time
-                            ):
-                                st.toast(
-                                    ":red[Please provide priority, collection date, and collection time]"
-                                )
-                                st.stop()
+        return phlebotomist, collection_date, collection_time, priority
 
-                            st.session_state.lrf_form["doctor"] = doctor
-                            st.session_state.lrf_form["assign_to"] = assign_to
-                            st.session_state.lrf_form["priority"] = priority
-                            st.session_state.lrf_form["collection_date"] = (
-                                collection_date
-                            )
-                            st.session_state.lrf_form["collection_time"] = (
-                                collection_time
-                            )
-
-                            st.toast(":green[Appointment details saved]")
-
-        with test_details:
+    @st.fragment
+    def add_tests() -> None:
+        with st.container(border=True, horizontal=True):
             tests_df = prepare_tests_df(conn)
             search_tests(tests_df)
 
-            with st.container(
-                border=False, horizontal=True, horizontal_alignment="center"
-            ):
-                if (
-                    "patient_first_name" not in st.session_state.lrf_form
-                    or "assign_to" not in st.session_state.lrf_form
-                ):
-                    submit_lrf = st.button(
-                        "Please fill all required fields in the previous tabs",
-                        width=500,
-                        disabled=True,
-                    )
-                else:
-                    submit_lrf = st.button("Save Lab Request", width=500)
-                    if submit_lrf:
-                        create_request()
+    def lab_request_form():
+        first_name, surname, gender, dob, phone, location = patient_details()
+        phlebotomist, collection_date, collection_time, priority = appointment_details()
+        add_tests()
+
+        with st.container(border=False, horizontal=False, horizontal_alignment="center"):
+            submitted = st.button("Create Test")
+            if submitted:
+                if not first_name:
+                    st.toast(" ⚠️ :red[**Please provide patient's first name**]")
+                    st.stop()
+                if not surname:
+                    st.toast(" ⚠️ :red[**Please provide patient's surname**]")
+                    st.stop()
+                if not gender:
+                    st.toast(" ⚠️ :red[**Please provide patient's gender**]")
+                    st.stop()
+                if not dob:
+                    st.toast(" ⚠️ :red[**Please provide patient's Date of birth**]")
+                    st.stop()
+                if not phone:
+                    st.toast(" ⚠️ :red[**Please provide patient's phone number**]")
+                    st.stop()
+                if not location:
+                    st.toast(" ⚠️ :red[**Please provide patient's location**]")
+                    st.stop()
+                if not phlebotomist:
+                    st.toast(" ⚠️ :red[**Please assign a phlebotomist**]")
+                    st.stop()
+                if not collection_date or not collection_time:
+                    st.toast(" ⚠️ :red[**Please provide collection_date/time**]")
+                    st.stop()
+                
+                if not st.session_state.selected_tests:
+                    st.toast(" ⚠️ :red[**Please add tests**]")
+                    st.stop()
+
+                selected_tests = st.session_state.selected_tests
+
+                
+                form_data = {
+                    "first_name": first_name.strip().replace(" ", "_"),
+                    "surname": surname.strip().replace(" ", "_"),
+                    "dob": dob,
+                    "gender": gender.strip(),
+                    "phone": phone.strip(),
+                    "location": location.strip(),
+                    "selected_tests": list(selected_tests),
+                    "assign_to": phlebotomist.split("-")[1].strip(),
+                    "priority": priority,
+                    "collection_date": collection_date,
+                    "collection_time": collection_time
+                }
+
+                print(form_data)
+
+                create_request(form_data)
+
+                    
+                    
+                    
+                    
+                    
+
+
+
+    lab_request_form()
+
+# with lab_req_formm_ctn:
+#     with st.container(horizontal_alignment="center"):
+#         st.markdown("#### Lab Request Form", width="content")
+
+#         patient_details, appointment_details, test_details = st.tabs(
+#             ["Patient Details", "Appointment Details", "Tests Selection"]
+#         )
+
+#         # =========== patient details ==========================
+#         with patient_details:
+#             with st.form("LRF-patient-details", border=False, enter_to_submit=False):
+#                 with st.container(
+#                     border=False,
+#                     horizontal=False,
+#                     horizontal_alignment="center",
+#                     vertical_alignment="top",
+#                     height=450,
+#                 ):
+#                     with st.container(horizontal=True, horizontal_alignment="left"):
+#                         f_name = st.text_input(
+#                             "First Name*",
+#                             width=350,
+#                         )
+#                         s_name = st.text_input("Surname*", width=350)
+#                         m_name = st.text_input(
+#                             "Middle Name", width=350, placeholder="optional"
+#                         )
+
+#                     with st.container(horizontal=True, horizontal_alignment="left"):
+#                         dob = st.date_input(
+#                             "Date of Birth*",
+#                             format="DD/MM/YYYY",
+#                             min_value=datetime(1900, 1, 1),
+#                             key="dob",
+#                             width=350,
+#                         )
+
+#                         gender_options = ["Male", "Female", "Other"]
+#                         current_gender = st.session_state.lrf_form.get(
+#                             "patient_gender", None
+#                         )
+#                         gender = st.selectbox(
+#                             "Gender*",
+#                             options=gender_options,
+#                             width=350,
+#                         )
+
+#                         location = st.text_input(
+#                             "Location*",
+#                             width=350,
+#                         )
+
+#                     with st.container(horizontal=True, horizontal_alignment="left"):
+#                         contact = st.text_input(
+#                             "Phone No:*",
+#                             key="phone",
+#                             width=350,
+#                         )
+
+#                         email = st.text_input(
+#                             "Email",
+#                             key="email",
+#                             width=350,
+#                         )
+
+#                     with st.container(horizontal=False, horizontal_alignment="center"):
+#                         save_patient_details_btn = st.form_submit_button(
+#                             "Save", width=250
+#                         )
+#                         if save_patient_details_btn:
+#                             if (
+#                                 not f_name
+#                                 or not s_name
+#                                 or not dob
+#                                 or not gender
+#                                 or not location
+#                                 or not contact
+#                             ):
+#                                 st.toast(
+#                                     ":red[Please provide all the required details]"
+#                                 )
+#                             else:
+#                                 st.session_state.lrf_form["patient_first_name"] = f_name
+#                                 st.session_state.lrf_form["patient_surname"] = s_name
+#                                 st.session_state.lrf_form["patient_middle_name"] = (
+#                                     m_name if m_name else ""
+#                                 )
+#                                 st.session_state.lrf_form["patient_dob"] = dob
+#                                 st.session_state.lrf_form["patient_phone"] = contact
+#                                 st.session_state.lrf_form["patient_email"] = (
+#                                     email if email else "N/A"
+#                                 )
+#                                 st.session_state.lrf_form["patient_gender"] = gender
+#                                 st.session_state.lrf_form["patient_location"] = location
+
+#                                 st.toast(":green[Patient details saved]")
+
+#         # =========== Doctor/Clinic details ==========================
+#         with appointment_details:
+#             with st.form("LRF_clinic_details", border=False, height=450):
+#                 with st.container(horizontal=True, horizontal_alignment="distribute"):
+#                     # doctor = st.selectbox(
+#                     #     "Doctor*",
+#                     #     options=fetch_doctors(conn),
+#                     #     index=None,
+#                     #     placeholder="Select an existing doctor",
+#                     # )
+#                     pass
+
+#                 # st.divider()
+#                 assign_to = st.selectbox(
+#                     "Assign to:*", options=fetch_phlebotomists(conn), index=None
+#                 )
+#                 # st.divider()
+
+#                 with st.container(
+#                     border=False, horizontal=True, horizontal_alignment="distribute"
+#                 ):
+#                     priority = st.selectbox(
+#                         "Priority*",
+#                         options=["Routine", "Urgent"],
+#                         index=None,
+#                         width=300,
+#                     )
+#                     collection_date = st.date_input("Collection Date*", width=300)
+#                     collection_time = st.time_input("Collection Time*", width=300)
+
+#                 st.space()
+#                 with st.container(horizontal=False, horizontal_alignment="center"):
+#                     if "patient_first_name" not in st.session_state.lrf_form:
+#                         st.form_submit_button(
+#                             "Please fill required fields in patient details",
+#                             disabled=True,
+#                         )
+
+#                     else:
+#                         save_clinic_details_btn = st.form_submit_button(
+#                             "Save", width=250
+#                         )
+#                         if save_clinic_details_btn:
+#                             # if not doctor:
+#                             #     st.toast(":red[Please select a doctor]")
+#                             #     st.stop()
+
+#                             # ---- Phlebotomist validation ----
+#                             if not assign_to:
+#                                 st.toast(":red[Please assign a phlebotomist]")
+#                                 st.stop()
+
+#                             # ---- Priority, date, time validation ----
+#                             if (
+#                                 not priority
+#                                 or not collection_date
+#                                 or not collection_time
+#                             ):
+#                                 st.toast(
+#                                     ":red[Please provide priority, collection date, and collection time]"
+#                                 )
+#                                 st.stop()
+
+#                             # st.session_state.lrf_form["doctor"] = doctor
+#                             st.session_state.lrf_form["assign_to"] = assign_to
+#                             st.session_state.lrf_form["priority"] = priority
+#                             st.session_state.lrf_form["collection_date"] = (
+#                                 collection_date
+#                             )
+#                             st.session_state.lrf_form["collection_time"] = (
+#                                 collection_time
+#                             )
+
+#                             st.toast(":green[Appointment details saved]")
+
+#         with test_details:
+#             tests_df = prepare_tests_df(conn)
+#             search_tests(tests_df)
+
+#             with st.container(
+#                 border=False, horizontal=True, horizontal_alignment="center"
+#             ):
+#                 if (
+#                     "patient_first_name" not in st.session_state.lrf_form
+#                     or "assign_to" not in st.session_state.lrf_form
+#                 ):
+#                     submit_lrf = st.button(
+#                         "Please fill all required fields in the previous tabs",
+#                         width=500,
+#                         disabled=True,
+#                     )
+#                 else:
+#                     submit_lrf = st.button("Save Lab Request", width=500)
+#                     if submit_lrf:
+#                         create_request()

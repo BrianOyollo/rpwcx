@@ -21,7 +21,7 @@ def fetch_categories_and_tests(_conn):
     test_category_map : dict
         Dictionary where keys are individual test names (strings) and values
         are their corresponding category names (strings).
-    
+
     Example:
     --------
     {
@@ -30,15 +30,18 @@ def fetch_categories_and_tests(_conn):
         ...
     }
     """
-    categories_tests = _conn.query("select category_name, available_tests from tests", ttl=0)
+    categories_tests = _conn.query(
+        "select category_name, available_tests from tests", ttl=0
+    )
 
     test_category_map = {}
     for _, row in categories_tests.iterrows():
-        category = row['category_name']
-        for test in row['available_tests']:
-            test_category_map[test]=category
+        category = row["category_name"]
+        for test in row["available_tests"]:
+            test_category_map[test] = category
 
     return test_category_map
+
 
 def categorize_selected_tests(conn, selected_tests):
     """
@@ -80,7 +83,7 @@ def categorize_selected_tests(conn, selected_tests):
     for test in selected_tests:
         category = test_category_map.get(test, "Uncategorized")
         categorized.setdefault(category, []).append(test)
-    
+
     return categorized
 
 
@@ -137,7 +140,7 @@ def fetch_tests(conn, filter: str = None):
         - A record is included if it matches either condition
 
     Parameters:
-        conn: 
+        conn:
             Database connection object used to query test data.
         filter (str, optional):
             Text used to filter categories or test names.
@@ -189,6 +192,7 @@ def prepare_tests_df(_conn):
     df = pd.DataFrame(rows)
     return df
 
+
 @st.fragment
 def search_tests(df):
     """
@@ -212,7 +216,7 @@ def search_tests(df):
 
     Session State Keys:
         search_key : int
-            Used to force rerendering of search input components after 
+            Used to force rerendering of search input components after
             adding or removing tests.
         selected_tests : set[str]
             Holds the current list of user-selected tests.
@@ -241,7 +245,7 @@ def search_tests(df):
 
     q = st.text_input(
         "Search",
-        placeholder="search",
+        placeholder="Find test using test code, name or category",
         label_visibility="collapsed",
         key=f"search{st.session_state.search_key}",
     )
@@ -275,7 +279,7 @@ def search_tests(df):
 
     with st.expander("Selected Tests", expanded=False):
         with st.container(
-            border=True,
+            border=False,
             horizontal=True,
             horizontal_alignment="left",
             vertical_alignment="top",
@@ -292,6 +296,7 @@ def search_tests(df):
                 if clear:
                     st.session_state.selected_tests = set()
                     st.rerun(scope="fragment")
+
 
 @st.cache_data(ttl=60)
 def fetch_doctors(_conn) -> pd.DataFrame:
@@ -391,3 +396,5 @@ def fetch_phlebotomists(_conn) -> pd.DataFrame:
     except Exception as e:
         st.error("Error fetching phlebotomists. Please try again or contact the admin")
         st.stop()
+
+

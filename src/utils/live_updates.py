@@ -7,16 +7,18 @@ import json
 
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
-def send_tg_new_request_message(chat_id:int, message:str)->None:
+
+def send_tg_new_request_message(chat_id: int, message: str) -> None:
     url = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
     requests.post(url, data={"chat_id": chat_id, "text": message})
 
+
 conn = psycopg2.connect(
-    dbname = os.getenv("DB"),
-    user = os.getenv("DB_USER"),
-    password = os.getenv("DB_PASSWORD"),
-    host = os.getenv("DB_HOST"),
-    port = os.getenv("DB_PORT")
+    dbname=os.getenv("DB"),
+    user=os.getenv("DB_USER"),
+    password=os.getenv("DB_PASSWORD"),
+    host=os.getenv("DB_HOST"),
+    port=os.getenv("DB_PORT"),
 )
 conn.set_isolation_level(psycopg2.extensions.ISOLATION_LEVEL_AUTOCOMMIT)
 cur = conn.cursor()
@@ -27,7 +29,7 @@ print("Waiting for notifications on channel 'new_requests_channel'...")
 while True:
     # wait for notifications
     # if nothing changes, loop again
-    if select.select([conn], [], [], 5) == ([],[],[]):
+    if select.select([conn], [], [], 5) == ([], [], []):
         continue
     else:
         conn.poll()
@@ -48,7 +50,7 @@ while True:
                 FROM users 
                 WHERE dkl_code=%s
                 """,
-                (assigned_to,)
+                (assigned_to,),
             )
             tg_chat_id = cur.fetchone()
             if not tg_chat_id:

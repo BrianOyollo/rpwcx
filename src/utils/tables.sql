@@ -41,7 +41,7 @@ CREATE TABLE requests (
     email VARCHAR(150),
     location VARCHAR(150),
 
-    doctor_dkl_code VARCHAR REFERENCES users(dkl_code),
+    doctor_dkl_code VARCHAR REFERENCES users(dkl_code) NULL,
 
     selected_tests TEXT[] NOT NULL,
 

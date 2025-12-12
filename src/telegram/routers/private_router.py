@@ -18,23 +18,24 @@ BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 GROUP_ID = int(os.getenv("TELEGRAM_GROUP_ID"))
 
 private_router = Router()
-private_router.message.filter(F.chat.type == 'private')
+private_router.message.filter(F.chat.type == "private")
 
 
 @private_router.message(Command("start"))
-async def private_start_command(message:Message, bot:Bot) -> None:
-
+async def private_start_command(message: Message, bot: Bot) -> None:
     user_name = message.chat.first_name
     user_id = message.chat.id
 
     if not await user_is_group_member(user_id, bot):
-        await message.answer("You must mem a registered member of RPWC-DKL to interact with this bot")
+        await message.answer(
+            "You must mem a registered member of RPWC-DKL to interact with this bot"
+        )
         return
-    
+
     if not user_is_in_db(user_id):
         await message.answer("Unauthorized! You must be registered in our system")
-        return 
-    
+        return
+
     await message.answer(
         f"""
         👋 Hello {user_name}
@@ -50,13 +51,14 @@ Here’s what I can help you with:
 
 Type **/help** anytime to see a full list of available commands
         """,
-        parse_mode="MarkdownV2"
+        parse_mode="MarkdownV2",
     )
 
-@private_router.message(Command("help"))
-async def private_help(message: Message)->None:
 
-    await message.answer("""
+@private_router.message(Command("help"))
+async def private_help(message: Message) -> None:
+    await message.answer(
+        """
         *RPWC DKL Assistant Bot*
         
 *Available Commands*
@@ -71,43 +73,44 @@ async def private_help(message: Message)->None:
 *Need Assistance?*
 If something doesn’t work or you believe there’s an error, contact the admin
 """,
-    parse_mode="MarkdownV2"
+        parse_mode="MarkdownV2",
     )
 
 
 @private_router.message(Command("tasks", "pending", "completed", "in_progress"))
-async def all_user_tasks(message:Message, bot:Bot, command:CommandObject)->None:
+async def all_user_tasks(message: Message, bot: Bot, command: CommandObject) -> None:
     user_name = message.chat.first_name
     user_id = message.chat.id
 
     if not await user_is_group_member(user_id, bot):
-        await message.answer("You must be a registered member of RPWC-DKL to interact with this bot")
+        await message.answer(
+            "You must be a registered member of RPWC-DKL to interact with this bot"
+        )
         return
-    
+
     if not user_is_in_db(user_id):
         await message.answer("Unauthorized! You must be registered in our system")
-        return 
+        return
     try:
         with utils.get_connection() as conn:
             with conn.cursor() as cur:
-
                 task_status = command.command
 
-                if task_status.strip() == 'in_progress':
+                if task_status.strip() == "in_progress":
                     query = f"""
                         SELECT r.* FROM requests r
                         JOIN users u ON u.dkl_code=r.assign_to
                         WHERE u.telegram_chat_id=%s AND request_status='in-progress'
                         ORDER BY r.created_at DESC;
                     """
-                elif task_status.strip() == 'pending':
+                elif task_status.strip() == "pending":
                     query = f"""
                         SELECT r.* FROM requests r
                         JOIN users u ON u.dkl_code=r.assign_to
                         WHERE u.telegram_chat_id=%s AND request_status='pending'
                         ORDER BY r.created_at DESC;
                     """
-                elif task_status.strip() == 'completed':
+                elif task_status.strip() == "completed":
                     query = f"""
                         SELECT r.* FROM requests r
                         JOIN users u ON u.dkl_code=r.assign_to
@@ -122,7 +125,7 @@ async def all_user_tasks(message:Message, bot:Bot, command:CommandObject)->None:
                         ORDER BY r.created_at DESC;
                     """
                 cur.execute(query, (user_id,))
-                
+
                 tasks = cur.fetchall()
                 if not tasks:
                     await message.answer("You don't have any tasks")
@@ -130,14 +133,13 @@ async def all_user_tasks(message:Message, bot:Bot, command:CommandObject)->None:
 
                 # await message.answer("Here are your tasks, most recent first")
 
-                
                 for task in tasks:
                     task_id = task[0]
                     patient = f"{task[1]} {task[2]}"
                     location = task[8]
                     urgency = task[12]
-                    appointment_date = task[13].strftime('%b %d, %Y')
-                    appointment_time = task[14].strftime('%I:%M %p')
+                    appointment_date = task[13].strftime("%b %d, %Y")
+                    appointment_time = task[14].strftime("%I:%M %p")
                     status = task[-1].title()
 
                     # Build keyboard
@@ -161,9 +163,12 @@ async def all_user_tasks(message:Message, bot:Bot, command:CommandObject)->None:
                         f"📌 *Status:* {status}"
                     )
 
-                    await message.answer(preview, parse_mode="Markdown", reply_markup=builder.as_markup())
-
+                    await message.answer(
+                        preview, parse_mode="Markdown", reply_markup=builder.as_markup()
+                    )
 
     except Exception as e:
         print(e)
-        await message.answer("Error fetching your assigned tasks. Please try again later or contact the admin")
+        await message.answer(
+            "Error fetching your assigned tasks. Please try again later or contact the admin"
+        )

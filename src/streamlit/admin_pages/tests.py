@@ -97,7 +97,7 @@ def update_category(category_id: int):
         - Updates the category in the `tests` table with new values.
         - Clears cached test data and reruns the app on success.
         - Handles unique constraint violations (duplicate category name) and general database errors with feedback.
-    
+
     Notes:
         - Splits and trims comma-separated test names before updating the database.
         - Provides user warnings and error messages for missing or invalid inputs.
@@ -111,7 +111,6 @@ def update_category(category_id: int):
     except Exception as e:
         st.error("Error fetching update details. Please try again or contact admin")
         st.stop()
-    
 
     category_id = category_details[0]["id"]
     current_category_name = category_details[0]["category_name"]
@@ -184,7 +183,7 @@ def delete_category(category_id: int):
         - Executes deletion from the `tests` table when user confirms.
         - Clears cached test data and reruns the app on success.
         - Handles database errors gracefully with a user-friendly message.
-    
+
     Notes:
         - This action is irreversible; the deleted category and tests cannot be recovered.
     """
@@ -214,6 +213,7 @@ def delete_category(category_id: int):
                     "Error deleting category. \nPlease contact system admin for support if the issue persists"
                 )
                 session.rollback()
+
 
 actions_container = st.container(
     key="actions_ctn",
@@ -290,20 +290,25 @@ with tests_list_container:
                 horizontal_alignment="distribute",
                 vertical_alignment="center",
             ):
-                
                 with st.container(
                     horizontal=False,
                     horizontal_alignment="distribute",
                     vertical_alignment="top",
                     width=900,
                 ):
-                    st.caption(category['category_description'] if category['category_description'] else "No description added" )
+                    st.caption(
+                        category["category_description"]
+                        if category["category_description"]
+                        else "No description added"
+                    )
                     # st.pills(
                     #     category["category_description"],
                     #     category["available_tests"],
                     #     label_visibility="collapsed"
                     # )
-                    badge_list = [f":orange-badge[{test}]" for test in category["available_tests"]]
+                    badge_list = [
+                        f":orange-badge[{test}]" for test in category["available_tests"]
+                    ]
                     # st.write(badge_list)
                     st.markdown(" ".join(badge_list))
 

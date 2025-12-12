@@ -139,7 +139,7 @@ with tab1:
             - Inserts the new user into the `users` table in the database.
             - Handles integrity errors for duplicate DKL code or email.
             - Clears the cached list of users and refreshes the page upon successful addition.
-        
+
         Notes:
             - Roles are limited to "Doctor", "Phlebotomist", or "Admin".
             - All DKL codes are stored in lowercase.
@@ -328,7 +328,7 @@ with tab2:
         Provides an interactive interface to view, search, edit, and update users in the system.
 
         Features:
-            - Displays all active users in a data editor table with editable columns: 
+            - Displays all active users in a data editor table with editable columns:
             name, email, contact, user_type, and active status.
             - Search functionality for DKL code, name, or email.
             - Dynamic addition of new rows (note: new rows added here are not saved automatically).

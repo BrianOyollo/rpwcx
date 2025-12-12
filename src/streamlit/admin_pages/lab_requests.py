@@ -8,7 +8,7 @@ from utils import (
     fetch_phlebotomists,
     fetch_doctors,
     search_tests,
-    prepare_tests_df,
+    prepare_tests_df
 )
 
 st.set_page_config(page_title="RPWC|Lab Requests", layout="wide")
@@ -63,12 +63,12 @@ def fetch_requests():
                 CONCAT(r.first_name,' ',r.middle_name, ' ',r.surname)  AS patient, 
                 r.dob, r.gender, r.phone, r.email, r.location,
                 r.selected_tests, r.collection_date, r.collection_time,priority,
-                d.name as doctor,
+                -- d.name as doctor,
                 p.name as phlebotomist,
                 r.request_status, r.created_at, r.updated_at          
             FROM requests r
-            JOIN doctors d on d.dkl_code = r.doctor_dkl_code
-            JOIN phlebotomists p on p.dkl_code = r.assign_to
+            -- LEFT JOIN doctors d on d.dkl_code = r.doctor_dkl_code
+            LEFT JOIN phlebotomists p on p.dkl_code = r.assign_to
             ORDER BY created_at DESC;	
             """,
             ttl=0,
@@ -107,12 +107,12 @@ def request_details(request):
         st.write(f":orange[**DoB**]: **{request['dob']}**")
         st.write(f":orange[**Location**]: **{request['location'].strip()}**")
         st.write(
-            f":orange[**Contacts**]: **{request['phone'].strip()}, {request['email'].strip()}**"
+            f":orange[**Contacts**]: **{request['phone'].strip()}**"
         )
 
-        st.caption("------------ Doctor/Phlebotomist ------------ ")
-        st.write(f":orange[**Dcotor**]: **{request['doctor']}**")
-        st.write(f":orange[**Phlebotomist**]: **{request['phlebotomist']}**")
+        # st.caption("------------ Doctor/Phlebotomist ------------ ")
+        # st.write(f":orange[**Doctor**]: **{request['doctor']}**")
+        # st.write(f":orange[**Phlebotomist**]: **{request['phlebotomist']}**")
 
         st.caption("------------ Test Details ------------ ")
         st.write(
@@ -126,7 +126,7 @@ def request_details(request):
             f":orange[**Collection Date**]: **{request['collection_date']} at {request['collection_time'].strftime('%H:%M %p')}**"
         )
         tests_badges = [f":gray-badge[{test}]" for test in request["selected_tests"]]
-        st.markdown(f":orange[**Tests**]: {' '.join(tests_badges)}")
+        st.markdown(f":orange[**Tests**]:\n {' '.join(tests_badges)}")
 
 
 @st.dialog("Delete Lab Request")
@@ -198,118 +198,63 @@ if st.session_state.lr_mode == "edit" and st.session_state.get("request_to_edit"
                 - Performs database updates with rollback on errors.
                 - UI height, layout, and alignment are customized for usability.
             """
-            tabs = st.tabs(["Patient Details", "Appointment Details", "Test Details"])
 
-            # st.write(st.session_state.edited_request)
-
-            with tabs[0]:
-                # =========================== PATIENT DETAILS =========================================
+            def patient_details():
                 patient_to_edit = request_to_edit["patient"].split(" ")
-                with st.container(
-                    border=True,
-                    horizontal=False,
-                    horizontal_alignment="left",
-                    vertical_alignment="top",
-                    height=465,
-                ):
-                    with st.container(border=False, horizontal=True):
-                        f_name = st.text_input(
-                            "First Name*",
+                with st.container(border=True, horizontal=False):
+                    with st.container(border=False, horizontal=True, width="stretch"):
+                        first_name = st.text_input(
+                            "First Name", 
+                            placeholder="First Name", 
+                            label_visibility="visible", 
+                            key="first_name",
                             value=patient_to_edit[0].strip().replace("_", " "),
-                            width=350,
-                            key="edit_patient_first_name",
                         )
                         surname = st.text_input(
-                            "Surname*",
-                            value=patient_to_edit[2].strip().replace("_", " "),
-                            width=350,
-                            key="edit_patient_surname",
-                        )
-                        m_name = st.text_input(
-                            "Middle Name",
-                            value=patient_to_edit[1].strip().replace("_", " "),
-                            width=350,
-                            placeholder="optional",
-                            key="edit_patient_middle_name",
-                        )
-                    with st.container(border=False, horizontal=True):
-                        dob = st.date_input(
-                            "Date of Birth*",
-                            format="DD/MM/YYYY",
-                            value=request_to_edit["dob"],
-                            min_value=datetime(1900, 1, 1),
-                            width=350,
-                            key="edit_patient_dob",
+                            "Surname", 
+                            placeholder="Surname", 
+                            label_visibility="visible", 
+                            key="surname",
+                            value=patient_to_edit[2].strip().replace("_", " ")
                         )
 
+                    with st.container(border=False, horizontal=True, width="stretch"):
                         gender_options = ["Male", "Female", "Other"]
                         gender = st.selectbox(
                             "Gender*",
                             options=gender_options,
                             index=gender_options.index(request_to_edit["gender"]),
-                            width=350,
-                            key="edit_patient_gender",
+                            width='stretch',
+                            key="gender",
                         )
-
-                        location = st.text_input(
-                            "Location*",
-                            width=350,
-                            value=request_to_edit["location"],
-                            key="edit_patient_location",
+                        dob = st.date_input(
+                            "Date of Birth", 
+                            label_visibility="visible", 
+                            width="stretch", 
+                            key='dob',
+                            format="DD/MM/YYYY",
+                            min_value=datetime(1900, 1, 1),
+                            value=request_to_edit["dob"],
                         )
-                    with st.container(border=False, horizontal=True):
                         phone = st.text_input(
-                            "Phone No:*",
-                            width=350,
-                            value=request_to_edit["phone"],
-                            key="edit_patient_phone",
+                            "Phone", 
+                            width="stretch", 
+                            key="phone",
+                            value=request_to_edit["phone"]
                         )
 
-                        email = st.text_input(
-                            "Email",
-                            width=350,
-                            value=request_to_edit["email"],
-                            key="edit_patient_email",
-                        )
-
-            with tabs[1]:
-                # =========================== APPOINTMENT DETAILS =========================================
-                with st.container(
-                    border=True,
-                    horizontal=False,
-                    horizontal_alignment="left",
-                    vertical_alignment="top",
-                    height=465,
-                ):
-                    request_status_options = ['pending', 'in-progress', 'completed', 'cancelled']
-                    request_status = st.selectbox(
-                        "Status:*",
-                        options=request_status_options,
-                        index=request_status_options.index(request_to_edit['request_status']),
-                        key="edit_request_status",
-                        format_func = lambda x: x.title()
+                    location = st.text_input(
+                        "Location", 
+                        width="stretch", 
+                        key="location",
+                        value=request_to_edit["location"]
                     )
 
-                    doctor_options = fetch_doctors(conn)["doctor"].to_list()
-                    current_doctor = request_to_edit["doctor"]
-                    doctor_match = None
+                return first_name, surname, gender, dob, phone, location
 
-                    for doctor in doctor_options:
-                        if current_doctor.lower() in doctor.lower():
-                            doctor_match = doctor
-
-                    doctor = st.selectbox(
-                        "Doctor*",
-                        options=doctor_options,
-                        index=doctor_options.index(doctor_match),
-                        placeholder="Select an existing doctor",
-                        key="edit_doctor",
-                    )
-
-                    # st.divider()
-                    phlebotomist_options = fetch_phlebotomists(conn)[
-                        "phlebotomist"
-                    ].to_list()
+            def appointment_details() -> tuple:
+                with st.container(border=True, horizontal=True):
+                    phlebotomist_options = fetch_phlebotomists(conn)["phlebotomist"].to_list()
                     current_phlebotomist = request_to_edit["phlebotomist"]
                     phlebotomist_match = None
 
@@ -320,48 +265,58 @@ if st.session_state.lr_mode == "edit" and st.session_state.get("request_to_edit"
                     phlebotomist = st.selectbox(
                         "Phlebotomist:*",
                         options=fetch_phlebotomists(conn),
-                        index=phlebotomist_options.index(phlebotomist_match),
-                        key="edit_phlebotomist",
+                        index=phlebotomist_options.index(phlebotomist_match) if phlebotomist_match else None,
+                        key="assign_to",
+                        width=350
                     )
-                    # st.divider()
 
-                    with st.container(
-                        border=False, horizontal=True, horizontal_alignment="distribute"
-                    ):
+                    collection_date = st.date_input(
+                        "Collection date", 
+                        width="stretch", 
+                        value = request_to_edit["collection_date"],
+                        key="collection_date",
+                        format="DD/MM/YYYY",
+                        min_value=datetime(1900, 1, 1),
+                    )
+                    collection_time = st.time_input(
+                        "Test Collection Time",
+                        value = request_to_edit["collection_time"],
+                        width="stretch", 
+                        key="collection_time"
+                    )
 
-                        priorit_options = ["Routine", "Urgent"]
-                        priority = st.selectbox(
-                            "Priority*",
-                            options=priorit_options,
-                            index=priorit_options.index(request_to_edit["priority"]),
-                            width=400,
-                            key="edit_priority",
-                        )
-                        collection_date = st.date_input(
-                            "Collection Date*",
-                            width=400,
-                            value=request_to_edit["collection_date"],
-                            key="edit_collection_date",
-                        )
-                        collection_time = st.time_input(
-                            "Collection Time*",
-                            width=400,
-                            value=request_to_edit["collection_time"],
-                            key="edit_collection_time",
-                        )
+                    priority_options = ["Routine", "Urgent"]
+                    priority = st.selectbox(
+                        "Priority", 
+                        options=priority_options, 
+                        index=priority_options.index(request_to_edit["priority"]),
+                        width='stretch', 
+                        key="priority"
+                    )
+
+                    request_status_options = ["pending","in-progress","completed","cancelled"]
+                    request_status = st.selectbox(
+                        "Status:*",
+                        options=request_status_options,
+                        index=request_status_options.index(
+                            request_to_edit["request_status"]
+                        ),
+                        key="edit_request_status",
+                        format_func=lambda x: x.title(),
+                    )
+
+                return phlebotomist, collection_date, collection_time, priority, request_status
+
+            def add_tests() -> None:
+                with st.container(border=True, horizontal=True):
+                    tests_df = prepare_tests_df(conn)
+                    search_tests(tests_df)
+
+            first_name, surname, gender, dob, phone, location = patient_details()
+            phlebotomist, collection_date, collection_time, priority, request_status = appointment_details()
+            add_tests()
 
 
-            with tabs[2]:
-                # =========================== APPOINTMENT DETAILS =========================================
-                with st.container(
-                    border=True,
-                    horizontal=False,
-                    horizontal_alignment="left",
-                    vertical_alignment="top",
-                    height=400,
-                ):
-                    df = prepare_tests_df(conn)
-                    search_tests(df)
 
             with st.container(
                 border=False, horizontal=True, horizontal_alignment="center"
@@ -375,48 +330,52 @@ if st.session_state.lr_mode == "edit" and st.session_state.get("request_to_edit"
 
                 save_edit = st.button("Save Changes")
                 if save_edit:
-                    if (
-                        not f_name
-                        or not surname
-                        or not dob
-                        or not gender
-                        or not phone
-                        or not location
-                        or not doctor
-                        or not phlebotomist
-                        or not priority
-                        or not collection_date
-                        or not collection_time
-                        or not request_status
-                    ):
-                        st.toast(":red[Please fill all required details]")
+                    if not first_name:
+                        st.toast(" ⚠️ :red[**Please provide patient's first name**]")
+                        st.stop()
+                    if not surname:
+                        st.toast(" ⚠️ :red[**Please provide patient's surname**]")
+                        st.stop()
+                    if not gender:
+                        st.toast(" ⚠️ :red[**Please provide patient's gender**]")
+                        st.stop()
+                    if not dob:
+                        st.toast(" ⚠️ :red[**Please provide patient's Date of birth**]")
+                        st.stop()
+                    if not phone:
+                        st.toast(" ⚠️ :red[**Please provide patient's phone number**]")
+                        st.stop()
+                    if not location:
+                        st.toast(" ⚠️ :red[**Please provide patient's location**]")
+                        st.stop()
+                    if not phlebotomist:
+                        st.toast(" ⚠️ :red[**Please assign a phlebotomist**]")
+                        st.stop()
+                    if not collection_date or not collection_time:
+                        st.toast(" ⚠️ :red[**Please provide collection_date/time**]")
+                        st.stop()
+                    
+                    if not st.session_state.selected_tests:
+                        st.toast(" ⚠️ :red[**Please add tests**]")
                         st.stop()
 
-                    if not st.session_state.get("selected_tests"):
-                        st.toast(":red[Please add tests]")
-                        st.stop()
+                    selected_tests = st.session_state.selected_tests
 
-                    db_data = {
-                        "first_name": f_name.strip().replace(" ", "_"),
+        
+                    form_data = {
+                        "first_name": first_name.strip().replace(" ", "_"),
                         "surname": surname.strip().replace(" ", "_"),
-                        "middle_name": m_name.strip().replace(" ", "_"),
                         "dob": dob,
                         "gender": gender.strip(),
                         "phone": phone.strip(),
-                        "email": email.strip(),
                         "location": location.strip(),
-                        # doctor in the system
-                        "doctor_dkl_code": doctor.split("-")[1].strip(),
-                        # tests
-                        "selected_tests": list(
-                            st.session_state.get("selected_tests", [])
-                        ),
+                        "selected_tests": list(selected_tests),
                         "assign_to": phlebotomist.split("-")[1].strip(),
-                        "priority": priority.strip(),
+                        "priority": priority,
                         "collection_date": collection_date,
                         "collection_time": collection_time,
                         "request_status": request_status,
-                        "request_id": request_to_edit["id"],
+                        "request_id": request_to_edit["id"]
                     }
 
                     with conn.session as session:
@@ -425,14 +384,14 @@ if st.session_state.lr_mode == "edit" and st.session_state.get("request_to_edit"
                                 """
                                 UPDATE requests 
                                 SET 
-                                    first_name=:first_name, surname=:surname, middle_name=:middle_name, dob=:dob, 
-                                    gender=:gender, phone=:phone, email=:email, location=:location, request_status=:request_status,
-                                    doctor_dkl_code=:doctor_dkl_code,selected_tests=:selected_tests, assign_to=:assign_to, priority=:priority, 
+                                    first_name=:first_name, surname=:surname, dob=:dob, 
+                                    gender=:gender, phone=:phone,location=:location, request_status=:request_status,
+                                    selected_tests=:selected_tests, assign_to=:assign_to, priority=:priority, 
                                     collection_date=:collection_date, collection_time=:collection_time, updated_at=now()
                                 WHERE id=:request_id
                                 """
                             )
-                            session.execute(insert_query, db_data)
+                            session.execute(insert_query, form_data)
                             session.commit()
 
                             st.session_state.lr_mode = "view"
@@ -440,10 +399,265 @@ if st.session_state.lr_mode == "edit" and st.session_state.get("request_to_edit"
                             st.rerun()
                         except Exception as e:
                             print(e)
-                            st.error(
-                                "Error saving lab request. Please try again or contact system admin for support"
+                            st.toast(
+                                ":red[**Error saving lab request. Please try again or contact system admin for support**]"
                             )
                             st.stop()
+
+            
+
+
+            # tabs = st.tabs(["Patient Details", "Appointment Details", "Test Details"])
+
+            # st.write(st.session_state.edited_request)
+
+            # with tabs[0]:
+            #     # =========================== PATIENT DETAILS =========================================
+            #     patient_to_edit = request_to_edit["patient"].split(" ")
+            #     with st.container(
+            #         border=True,
+            #         horizontal=False,
+            #         horizontal_alignment="left",
+            #         vertical_alignment="top",
+            #         height=465,
+            #     ):
+            #         with st.container(border=False, horizontal=True):
+            #             f_name = st.text_input(
+            #                 "First Name*",
+            #                 value=patient_to_edit[0].strip().replace("_", " "),
+            #                 width=350,
+            #                 key="edit_patient_first_name",
+            #             )
+            #             surname = st.text_input(
+            #                 "Surname*",
+            #                 value=patient_to_edit[2].strip().replace("_", " "),
+            #                 width=350,
+            #                 key="edit_patient_surname",
+            #             )
+            #             m_name = st.text_input(
+            #                 "Middle Name",
+            #                 value=patient_to_edit[1].strip().replace("_", " "),
+            #                 width=350,
+            #                 placeholder="optional",
+            #                 key="edit_patient_middle_name",
+            #             )
+            #         with st.container(border=False, horizontal=True):
+            #             dob = st.date_input(
+            #                 "Date of Birth*",
+            #                 format="DD/MM/YYYY",
+            #                 value=request_to_edit["dob"],
+            #                 min_value=datetime(1900, 1, 1),
+            #                 width=350,
+            #                 key="edit_patient_dob",
+            #             )
+
+                        # gender_options = ["Male", "Female", "Other"]
+                        # gender = st.selectbox(
+                        #     "Gender*",
+                        #     options=gender_options,
+                        #     index=gender_options.index(request_to_edit["gender"]),
+                        #     width=350,
+                        #     key="edit_patient_gender",
+                        # )
+
+                        # location = st.text_input(
+                        #     "Location*",
+                        #     width=350,
+                        #     value=request_to_edit["location"],
+                        #     key="edit_patient_location",
+                        # )
+            #         with st.container(border=False, horizontal=True):
+            #             phone = st.text_input(
+            #                 "Phone No:*",
+            #                 width=350,
+            #                 value=request_to_edit["phone"],
+            #                 key="edit_patient_phone",
+            #             )
+
+            #             email = st.text_input(
+            #                 "Email",
+            #                 width=350,
+            #                 value=request_to_edit["email"],
+            #                 key="edit_patient_email",
+            #             )
+
+            # with tabs[1]:
+            #     # =========================== APPOINTMENT DETAILS =========================================
+            #     with st.container(
+            #         border=True,
+            #         horizontal=False,
+            #         horizontal_alignment="left",
+            #         vertical_alignment="top",
+            #         height=465,
+            #     ):
+            #         request_status_options = [
+            #             "pending",
+            #             "in-progress",
+            #             "completed",
+            #             "cancelled",
+            #         ]
+            #         request_status = st.selectbox(
+            #             "Status:*",
+            #             options=request_status_options,
+            #             index=request_status_options.index(
+            #                 request_to_edit["request_status"]
+            #             ),
+            #             key="edit_request_status",
+            #             format_func=lambda x: x.title(),
+            #         )
+
+            #         # doctor_options = fetch_doctors(conn)["doctor"].to_list()
+            #         # current_doctor = request_to_edit["doctor"]
+            #         # doctor_match = None
+
+            #         # for doctor in doctor_options:
+            #         #     if current_doctor.lower() in doctor.lower():
+            #         #         doctor_match = doctor
+
+            #         # doctor = st.selectbox(
+            #         #     "Doctor*",
+            #         #     options=doctor_options,
+            #         #     index=doctor_options.index(doctor_match),
+            #         #     placeholder="Select an existing doctor",
+            #         #     key="edit_doctor",
+            #         # )
+
+            #         # st.divider()
+                    # phlebotomist_options = fetch_phlebotomists(conn)[
+                    #     "phlebotomist"
+                    # ].to_list()
+                    # current_phlebotomist = request_to_edit["phlebotomist"]
+                    # phlebotomist_match = None
+
+                    # for p in phlebotomist_options:
+                    #     if current_phlebotomist in p:
+                    #         phlebotomist_match = p
+
+                    # phlebotomist = st.selectbox(
+                    #     "Phlebotomist:*",
+                    #     options=fetch_phlebotomists(conn),
+                    #     index=phlebotomist_options.index(phlebotomist_match),
+                    #     key="edit_phlebotomist",
+                    # )
+            #         # st.divider()
+
+            #         with st.container(
+            #             border=False, horizontal=True, horizontal_alignment="distribute"
+            #         ):
+            #             priorit_options = ["Routine", "Urgent"]
+            #             priority = st.selectbox(
+            #                 "Priority*",
+            #                 options=priorit_options,
+            #                 index=priorit_options.index(request_to_edit["priority"]),
+            #                 width=400,
+            #                 key="edit_priority",
+            #             )
+            #             collection_date = st.date_input(
+            #                 "Collection Date*",
+            #                 width=400,
+            #                 value=request_to_edit["collection_date"],
+            #                 key="edit_collection_date",
+            #             )
+            #             collection_time = st.time_input(
+            #                 "Collection Time*",
+            #                 width=400,
+            #                 value=request_to_edit["collection_time"],
+            #                 key="edit_collection_time",
+            #             )
+
+            # with tabs[2]:
+            #     # =========================== Test DETAILS =========================================
+            #     with st.container(
+            #         border=True,
+            #         horizontal=False,
+            #         horizontal_alignment="left",
+            #         vertical_alignment="top",
+            #         height=400,
+            #     ):
+            #         df = prepare_tests_df(conn)
+            #         search_tests(df)
+
+            # with st.container(
+            #     border=False, horizontal=True, horizontal_alignment="center"
+            # ):
+            #     cancel_edit = st.button("Cancel Edit")
+            #     if cancel_edit:
+            #         st.session_state.lr_mode = "view"
+            #         st.session_state.request_to_edit = None
+            #         st.session_state.selected_tests = set()
+            #         st.rerun()
+
+            #     save_edit = st.button("Save Changes")
+            #     if save_edit:
+            #         if (
+            #             not f_name
+            #             or not surname
+            #             or not dob
+            #             or not gender
+            #             or not phone
+            #             or not location
+            #             # or not doctor
+            #             or not phlebotomist
+            #             or not priority
+            #             or not collection_date
+            #             or not collection_time
+            #             or not request_status
+            #         ):
+            #             st.toast(":red[Please fill all required details]")
+            #             st.stop()
+
+            #         if not st.session_state.get("selected_tests"):
+            #             st.toast(":red[Please add tests]")
+            #             st.stop()
+
+            #         db_data = {
+            #             "first_name": f_name.strip().replace(" ", "_"),
+            #             "surname": surname.strip().replace(" ", "_"),
+            #             "middle_name": m_name.strip().replace(" ", "_"),
+            #             "dob": dob,
+            #             "gender": gender.strip(),
+            #             "phone": phone.strip(),
+            #             "email": email.strip(),
+            #             "location": location.strip(),
+            #             # doctor in the system
+            #             # "doctor_dkl_code": doctor.split("-")[1].strip(),
+            #             # tests
+            #             "selected_tests": list(
+            #                 st.session_state.get("selected_tests", [])
+            #             ),
+            #             "assign_to": phlebotomist.split("-")[1].strip(),
+            #             "priority": priority.strip(),
+            #             "collection_date": collection_date,
+            #             "collection_time": collection_time,
+            #             "request_status": request_status,
+            #             "request_id": request_to_edit["id"],
+            #         }
+
+                    # with conn.session as session:
+                    #     try:
+                    #         insert_query = text(
+                    #             """
+                    #             UPDATE requests 
+                    #             SET 
+                    #                 first_name=:first_name, surname=:surname, middle_name=:middle_name, dob=:dob, 
+                    #                 gender=:gender, phone=:phone, email=:email, location=:location, request_status=:request_status,
+                    #                 selected_tests=:selected_tests, assign_to=:assign_to, priority=:priority, 
+                    #                 collection_date=:collection_date, collection_time=:collection_time, updated_at=now()
+                    #             WHERE id=:request_id
+                    #             """
+                    #         )
+                    #         session.execute(insert_query, db_data)
+                    #         session.commit()
+
+                    #         st.session_state.lr_mode = "view"
+                    #         st.session_state.selected_tests = set()
+                    #         st.rerun()
+                    #     except Exception as e:
+                    #         print(e)
+                    #         st.error(
+                    #             "Error saving lab request. Please try again or contact system admin for support"
+                    #         )
+                    #         st.stop()
 
         edit_request()
 
@@ -514,7 +728,7 @@ else:
                         req_status = request["request_status"]
                         st.badge(req_status.title(), color=status_color[req_status])
 
-                st.write(f"**👨‍⚕️ Doctor:** {request['doctor']}")
+                # st.write(f"**👨‍⚕️ Doctor:** {request['doctor']}")
                 st.write(f"**🧪 Phlebotomist:** {request['phlebotomist']}")
                 st.write(
                     f"📅 **Date:** {request['collection_date']}  "
@@ -542,5 +756,3 @@ else:
                     )
                     if req_del_btn:
                         delete_lab_request(request["id"])
-                    
-

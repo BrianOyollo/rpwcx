@@ -21,9 +21,16 @@ conn = st.session_state["conn"]
 
 def login():
     img_path = Path(__file__).parent / "static" / "images" / "rpwc.png"
-    with st.container(border=False, horizontal=False, horizontal_alignment='center', vertical_alignment='center'):
+    with st.container(
+        border=False,
+        horizontal=False,
+        horizontal_alignment="center",
+        vertical_alignment="center",
+    ):
         st.image(str(img_path))
-        st.button("**Login**", on_click=st.login, icon=":material/login:", type='primary')
+        st.button(
+            "**Login**", on_click=st.login, icon=":material/login:", type="primary"
+        )
 
 
 def logout():
@@ -46,7 +53,9 @@ new_lab_request = st.Page(
 lab_requests = st.Page(
     "admin_pages/lab_requests.py", title="Lab Requests", icon=":material/lab_profile:"
 )
-tests = st.Page("admin_pages/tests.py", title="Available Tests", icon=":material/fluid_balance:")
+tests = st.Page(
+    "admin_pages/tests.py", title="Available Tests", icon=":material/fluid_balance:"
+)
 
 # general user
 user_tasks = st.Page("user_pages/tasks.py", title="Tasks", icon=":material/assignment:")
